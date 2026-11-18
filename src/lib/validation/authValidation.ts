@@ -68,3 +68,44 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+
+import type {
+  AuthenticatedUserSession,
+  SignInParsedData,
+  UserRole,
+} from "@/types/auth";
+
+export function extractSignInFormData(formData: FormData): SignInParsedData {
+  const rawEmail = formData.get("email");
+  const rawPassword = formData.get("password");
+
+  return {
+    email: typeof rawEmail === "string" ? rawEmail.trim() : "",
+    password: typeof rawPassword === "string" ? rawPassword : "",
+  };
+}
+
+export function getDashboardRouteByRole(role?: UserRole): string {
+  return role === "admin" ? "/dashboard/admin" : "/dashboard/customer";
+}
+
+export function resolveSessionUser(
+  sessionData: unknown
+): AuthenticatedUserSession | null {
+  if (
+    typeof sessionData === "object" &&
+    sessionData !== null &&
+    "user" in sessionData
+  ) {
+    const candidate = (sessionData as { user: unknown }).user;
+    if (
+      typeof candidate === "object" &&
+      candidate !== null &&
+      "email" in candidate
+    ) {
+      return candidate as AuthenticatedUserSession;
+    }
+  }
+  return null;
+}

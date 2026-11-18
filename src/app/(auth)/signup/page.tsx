@@ -105,7 +105,7 @@ export default function SignUpPage() {
       }
 
       toast.success("Welcome to SalonBook! Account created successfully.");
-      router.push("/dashboard/customer");
+      router.push("/signin");
       router.refresh();
     } catch (error: unknown) {
       toast.error(
@@ -121,7 +121,7 @@ export default function SignUpPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard/customer",
+        callbackURL: "/signin",
       });
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Google authentication failed."));
@@ -308,7 +308,7 @@ export default function SignUpPage() {
               <p className="text-sm text-stone-600">
                 Already have an account?{" "}
                 <Link
-                  href="/sign-in"
+                  href="/signin"
                   className="font-semibold text-stone-900 underline underline-offset-4 hover:text-amber-700"
                 >
                   Sign In
