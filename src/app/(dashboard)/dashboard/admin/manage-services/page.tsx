@@ -4,7 +4,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
+import { deleteSalonService } from "@/lib/action/serviceActions";
 import { CreateServiceForm } from "@/components/dashboard/CreateServiceForm";
+import { DeleteServiceModal } from "@/components/dashboard/DeleteServiceModal";
+import { EditServiceModal } from "@/components/dashboard/EditServiceModal";
 import { ServiceToast } from "@/components/dashboard/ServiceToast";
 import {
   Plus,
@@ -26,12 +29,20 @@ export default function ManageServicesPage() {
   const [brokenImageIds, setBrokenImageIds] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Edit modal state
+  const [serviceToEdit, setServiceToEdit] = useState<SalonService | null>(null);
+
+  // Delete confirmation modal state
+  const [serviceToDelete, setServiceToDelete] = useState<SalonService | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
 
-  // Refresh services list after creating a new entry
+  // Refresh services list without full page reload
   const refreshServices = useCallback(async () => {
     setIsLoading(true);
     const data = await getSalonServices(userEmail || undefined);
@@ -70,20 +81,52 @@ export default function ManageServicesPage() {
     setBrokenImageIds((prev) => ({ ...prev, [serviceId]: true }));
   };
 
-  // Placeholder handler for upcoming edit action
+  // Open edit modal for selected service
   const handleEditClick = (service: SalonService) => {
-    setToast({
-      type: "success",
-      message: `Edit mode selected for "${service.serviceName}".`,
-    });
+    setServiceToEdit(service);
   };
 
-  // Placeholder handler for upcoming delete action
+  // Update local list and close modal after successful edit
+  const handleServiceUpdated = (
+    updatedService: SalonService,
+    message: string
+  ) => {
+    setServices((prev) =>
+      prev.map((item) => (item._id === updatedService._id ? updatedService : item))
+    );
+    setBrokenImageIds((prev) => ({ ...prev, [updatedService._id]: false }));
+    setServiceToEdit(null);
+    setToast({ type: "success", message });
+  };
+
+  // Open delete confirmation modal
   const handleDeleteClick = (service: SalonService) => {
-    setToast({
-      type: "error",
-      message: `Delete selected for "${service.serviceName}".`,
-    });
+    setServiceToDelete(service);
+  };
+
+  // Confirm and execute delete request, then update list in place
+  const handleConfirmDelete = async () => {
+    if (!serviceToDelete) return;
+
+    setIsDeleting(true);
+    const res = await deleteSalonService(serviceToDelete._id);
+    setIsDeleting(false);
+
+    if (res.success) {
+      const deletedId = serviceToDelete._id;
+      const deletedName = serviceToDelete.serviceName;
+      setServices((prev) => prev.filter((item) => item._id !== deletedId));
+      setServiceToDelete(null);
+      setToast({
+        type: "success",
+        message: `"${deletedName}" deleted successfully.`,
+      });
+    } else {
+      setToast({
+        type: "error",
+        message: res.message || "Failed to delete service.",
+      });
+    }
   };
 
   return (
@@ -224,7 +267,7 @@ export default function ManageServicesPage() {
                       <td className="py-3.5 px-5 text-right">
                         <div className="inline-flex items-center justify-end gap-2">
                           <Link
-                            href={`/dashboard/admin/manage-services/${service._id}`}
+                            href={`/services/${service._id}`}
                             title="View Details"
                             aria-label={`View ${service.serviceName}`}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition"
@@ -261,6 +304,22 @@ export default function ManageServicesPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Service Modal Component */}
+      <EditServiceModal
+        service={serviceToEdit}
+        onClose={() => setServiceToEdit(null)}
+        onSuccess={handleServiceUpdated}
+      />
+
+      {/* Delete Confirmation Modal Component */}
+      <DeleteServiceModal
+        isOpen={Boolean(serviceToDelete)}
+        serviceName={serviceToDelete?.serviceName || ""}
+        isDeleting={isDeleting}
+        onClose={() => setServiceToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
 
       {/* Create Service Modal */}
       {isModalOpen && (

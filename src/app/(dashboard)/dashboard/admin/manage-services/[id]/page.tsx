@@ -15,7 +15,17 @@ import {
   AlertCircle,
   Sparkles,
   ShieldAlert,
+  UserCheck,
 } from "lucide-react";
+
+// Format a readable display name from creator email
+function formatCreatorName(email?: string): string {
+  if (!email) return "Salon Admin";
+  const localPart = email.split("@")[0] || "Salon Admin";
+  return localPart
+    .replace(/[._-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 export default function ServiceDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -96,6 +106,7 @@ export default function ServiceDetailsPage() {
   const isServiceActive = service.isActive !== false && service.status !== "inactive";
   const userRole = (session?.user as { role?: string } | undefined)?.role;
   const isCustomer = userRole === "customer";
+  const creatorDisplayName = formatCreatorName(service.createdBy);
 
   return (
     <section className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -164,6 +175,18 @@ export default function ServiceDetailsPage() {
                 <p className="text-xs sm:text-sm text-stone-400 mt-1.5 leading-relaxed">
                   {service.shortDescription}
                 </p>
+              )}
+            </div>
+
+            {/* Created by badge */}
+            <div className="inline-flex items-center gap-2.5 rounded-xl border border-stone-800/90 bg-stone-900/70 px-3.5 py-2 text-xs">
+              <UserCheck className="h-4 w-4 text-amber-400 shrink-0" />
+              <span className="text-stone-400">Created by</span>
+              <span className="font-semibold text-white">{creatorDisplayName}</span>
+              {service.createdBy && (
+                <span className="text-[11px] text-stone-500 hidden sm:inline">
+                  ({service.createdBy})
+                </span>
               )}
             </div>
 
