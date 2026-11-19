@@ -8,16 +8,14 @@ export interface CreateServicePayload {
   shortDescription: string;
   description: string;
   isActive?: boolean;
+  createdBy: string;
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-
-// Reusable function to create a new service
+// Send service payload to backend API
 export async function createSalonService(serviceData: CreateServicePayload) {
   try {
-    // Backend API URL from environment variables or direct localhost fallback
-
     const response = await fetch(`${API_URL}/services`, {
       method: "POST",
       headers: {
@@ -37,7 +35,8 @@ export async function createSalonService(serviceData: CreateServicePayload) {
       data: result,
     };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+    const errorMessage =
+      error instanceof Error ? error.message : "An unexpected error occurred.";
     return {
       success: false,
       message: errorMessage,

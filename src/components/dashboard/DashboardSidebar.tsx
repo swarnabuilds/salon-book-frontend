@@ -47,7 +47,7 @@ export function DashboardSidebar() {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/login");
+          router.push("/signin");
           router.refresh();
         },
       },
