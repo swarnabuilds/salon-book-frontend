@@ -267,7 +267,7 @@ export default function ManageServicesPage() {
                       <td className="py-3.5 px-5 text-right">
                         <div className="inline-flex items-center justify-end gap-2">
                           <Link
-                            href={`/services/${service._id}`}
+                            href={`/dashboard/admin/manage-services/${service._id}`}
                             title="View Details"
                             aria-label={`View ${service.serviceName}`}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { getServiceById, SalonService } from "@/lib/api/serviceApi";
+import { BookAppointmentForm } from "@/components/services/BookAppointmentForm";
 import {
   ArrowLeft,
   Clock,
@@ -13,7 +14,6 @@ import {
   Calendar,
   Loader2,
   AlertCircle,
-  Sparkles,
   ShieldAlert,
   UserCheck,
 } from "lucide-react";
@@ -45,7 +45,7 @@ export default function ServiceDetailsPage() {
     }
   }, [isSessionLoading, session, router]);
 
-  // Fetch service details by dynamic [id]
+  // Fetch service details by dynamic [id] from backend/database
   useEffect(() => {
     let isMounted = true;
 
@@ -103,9 +103,11 @@ export default function ServiceDetailsPage() {
     );
   }
 
-  const isServiceActive = service.isActive !== false && service.status !== "inactive";
+  const isServiceActive =
+    service.isActive !== false && service.status !== "inactive";
   const userRole = (session?.user as { role?: string } | undefined)?.role;
   const isCustomer = userRole === "customer";
+  const canBook = isServiceActive && isCustomer;
   const creatorDisplayName = formatCreatorName(service.createdBy);
 
   return (
@@ -182,7 +184,9 @@ export default function ServiceDetailsPage() {
             <div className="inline-flex items-center gap-2.5 rounded-xl border border-stone-800/90 bg-stone-900/70 px-3.5 py-2 text-xs">
               <UserCheck className="h-4 w-4 text-amber-400 shrink-0" />
               <span className="text-stone-400">Created by</span>
-              <span className="font-semibold text-white">{creatorDisplayName}</span>
+              <span className="font-semibold text-white">
+                {creatorDisplayName}
+              </span>
               {service.createdBy && (
                 <span className="text-[11px] text-stone-500 hidden sm:inline">
                   ({service.createdBy})
@@ -210,7 +214,7 @@ export default function ServiceDetailsPage() {
               </div>
             </div>
 
-            {/* Compact role / status notice or booking CTA */}
+            {/* Role & active status enforcement */}
             <div className="pt-1">
               {!isServiceActive ? (
                 <div className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-gradient-to-r from-rose-500/15 via-rose-950/30 to-stone-900/60 px-3.5 py-2 text-xs font-medium text-rose-200 shadow-sm">
@@ -220,7 +224,10 @@ export default function ServiceDetailsPage() {
               ) : !isCustomer ? (
                 <div className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-stone-900/80 to-stone-900/50 px-3.5 py-2 text-xs font-medium text-amber-200 shadow-sm">
                   <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400" />
-                  <span>Only customer accounts can submit appointment requests.</span>
+                  <span>
+                    Only customer accounts can book appointments (Admin/other
+                    roles cannot book).
+                  </span>
                 </div>
               ) : (
                 <button
@@ -229,7 +236,11 @@ export default function ServiceDetailsPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-3 text-xs font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition cursor-pointer"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span>{showBookingForm ? "Hide Booking Form" : "Book Appointment"}</span>
+                  <span>
+                    {showBookingForm
+                      ? "Hide Booking Form"
+                      : "Book Appointment"}
+                  </span>
                 </button>
               )}
             </div>
@@ -246,13 +257,16 @@ export default function ServiceDetailsPage() {
           </p>
         </div>
 
-        {/* Booking form container */}
-        {showBookingForm && isServiceActive && isCustomer && (
-          <div className="relative z-10 rounded-2xl border border-amber-500/30 bg-stone-900/60 p-5 sm:p-6">
-            <h3 className="text-sm font-semibold text-white">Request Appointment</h3>
-            <p className="text-xs text-stone-400 mt-1">
-              Booking form will go here next.
-            </p>
+        {/* Inline Booking Form — strictly for active service + customer role */}
+        {showBookingForm && canBook && (
+          <div className="relative z-10">
+            <BookAppointmentForm
+              serviceId={service._id}
+              serviceName={service.serviceName}
+              price={Number(service.price) || 0}
+              duration={service.duration}
+              onClose={() => setShowBookingForm(false)}
+            />
           </div>
         )}
       </div>
