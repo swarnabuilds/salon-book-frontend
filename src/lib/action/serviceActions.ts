@@ -1,6 +1,6 @@
 // Define the interface for service payload based on your requirements
 export interface CreateServicePayload {
-  name: string;
+  serviceName: string;
   image: string;
   category: string;
   price: number;

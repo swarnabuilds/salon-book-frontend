@@ -31,7 +31,7 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
     const formData = new FormData(form);
 
     const payload: CreateServicePayload = {
-      name: String(formData.get("name") || "").trim(),
+      serviceName: String(formData.get("serviceName") || "").trim(),
       image: String(formData.get("image") || "").trim(),
       category: String(formData.get("category") || "").trim(),
       price: Number(formData.get("price") || 0),
@@ -86,12 +86,15 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Service name field */}
           <div>
-            <label htmlFor="name" className="block text-xs font-medium text-stone-300 mb-1.5">
+            <label
+              htmlFor="serviceName"
+              className="block text-xs font-medium text-stone-300 mb-1.5"
+            >
               Service Name <span className="text-amber-400">*</span>
             </label>
             <input
-              id="name"
-              name="name"
+              id="serviceName"
+              name="serviceName"
               type="text"
               required
               placeholder="e.g., Royal Keratin Hair Spa"
@@ -101,7 +104,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
           {/* Category dropdown */}
           <div>
-            <label htmlFor="category" className="block text-xs font-medium text-stone-300 mb-1.5">
+            <label
+              htmlFor="category"
+              className="block text-xs font-medium text-stone-300 mb-1.5"
+            >
               Category <span className="text-amber-400">*</span>
             </label>
             <select
@@ -120,7 +126,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
           {/* Price input */}
           <div>
-            <label htmlFor="price" className="block text-xs font-medium text-stone-300 mb-1.5">
+            <label
+              htmlFor="price"
+              className="block text-xs font-medium text-stone-300 mb-1.5"
+            >
               Price (BDT) <span className="text-amber-400">*</span>
             </label>
             <input
@@ -137,7 +146,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
           {/* Duration input */}
           <div>
-            <label htmlFor="duration" className="block text-xs font-medium text-stone-300 mb-1.5">
+            <label
+              htmlFor="duration"
+              className="block text-xs font-medium text-stone-300 mb-1.5"
+            >
               Duration <span className="text-amber-400">*</span>
             </label>
             <input
@@ -153,7 +165,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
         {/* Service image URL input */}
         <div>
-          <label htmlFor="image" className="block text-xs font-medium text-stone-300 mb-1.5">
+          <label
+            htmlFor="image"
+            className="block text-xs font-medium text-stone-300 mb-1.5"
+          >
             Service Image URL <span className="text-amber-400">*</span>
           </label>
           <input
@@ -168,7 +183,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
         {/* Short description input */}
         <div>
-          <label htmlFor="shortDescription" className="block text-xs font-medium text-stone-300 mb-1.5">
+          <label
+            htmlFor="shortDescription"
+            className="block text-xs font-medium text-stone-300 mb-1.5"
+          >
             Short Description <span className="text-amber-400">*</span>
           </label>
           <input
@@ -183,7 +201,10 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
         {/* Detailed description textarea */}
         <div>
-          <label htmlFor="description" className="block text-xs font-medium text-stone-300 mb-1.5">
+          <label
+            htmlFor="description"
+            className="block text-xs font-medium text-stone-300 mb-1.5"
+          >
             Detailed Description <span className="text-amber-400">*</span>
           </label>
           <textarea

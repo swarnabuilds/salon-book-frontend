@@ -1,11 +1,22 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
 import { CreateServiceForm } from "@/components/dashboard/CreateServiceForm";
 import { ServiceToast } from "@/components/dashboard/ServiceToast";
-import { Plus, X, Clock, Tag, Loader2, Scissors } from "lucide-react";
+import {
+  Plus,
+  X,
+  Clock,
+  Tag,
+  Loader2,
+  Scissors,
+  Eye,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 export default function ManageServicesPage() {
   const { data: session } = authClient.useSession();
@@ -57,6 +68,22 @@ export default function ManageServicesPage() {
   // Mark individual service image as fallback if loading fails
   const handleImageError = (serviceId: string) => {
     setBrokenImageIds((prev) => ({ ...prev, [serviceId]: true }));
+  };
+
+  // Placeholder handler for upcoming edit action
+  const handleEditClick = (service: SalonService) => {
+    setToast({
+      type: "success",
+      message: `Edit mode selected for "${service.serviceName}".`,
+    });
+  };
+
+  // Placeholder handler for upcoming delete action
+  const handleDeleteClick = (service: SalonService) => {
+    setToast({
+      type: "error",
+      message: `Delete selected for "${service.serviceName}".`,
+    });
   };
 
   return (
@@ -120,12 +147,15 @@ export default function ManageServicesPage() {
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Duration</th>
                   <th className="py-3.5 px-4">Price</th>
-                  <th className="py-3.5 px-5 text-right">Status</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-stone-800/60 text-xs">
                 {services.map((service) => {
+                  const isActiveService =
+                    service.isActive !== false && service.status !== "inactive";
                   const hasValidImage =
                     Boolean(service.image) && !brokenImageIds[service._id];
 
@@ -139,7 +169,7 @@ export default function ManageServicesPage() {
                           {hasValidImage ? (
                             <img
                               src={service.image}
-                              alt={service.name}
+                              alt={service.serviceName}
                               onError={() => handleImageError(service._id)}
                               className="h-11 w-11 rounded-xl object-cover border border-stone-800 group-hover:border-amber-500/30 transition shrink-0"
                             />
@@ -151,10 +181,10 @@ export default function ManageServicesPage() {
 
                           <div className="min-w-0">
                             <p className="font-semibold text-white truncate group-hover:text-amber-200 transition-colors">
-                              {service.name}
+                              {service.serviceName}
                             </p>
                             <p className="text-[11px] text-stone-400 truncate max-w-xs">
-                              {service.shortDescription}
+                              {service.shortDescription || service.description}
                             </p>
                           </div>
                         </div>
@@ -178,16 +208,50 @@ export default function ManageServicesPage() {
                         ৳{Number(service.price).toLocaleString()}
                       </td>
 
-                      <td className="py-3.5 px-5 text-right">
+                      <td className="py-3.5 px-4">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                            service.isActive !== false
+                            isActiveService
                               ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                               : "border border-stone-700 bg-stone-800/80 text-stone-400"
                           }`}
                         >
-                          {service.isActive !== false ? "Active" : "Inactive"}
+                          {isActiveService ? "Active" : "Inactive"}
                         </span>
+                      </td>
+
+                      {/* Action buttons: View (/services/[id]), Edit, Delete */}
+                      <td className="py-3.5 px-5 text-right">
+                        <div className="inline-flex items-center justify-end gap-2">
+                          <Link
+                            href={`/dashboard/admin/manage-services/${service._id}`}
+                            title="View Details"
+                            aria-label={`View ${service.serviceName}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={() => handleEditClick(service)}
+                            title="Edit Service"
+                            aria-label={`Edit ${service.serviceName}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 hover:text-sky-200 transition cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClick(service)}
+                            title="Delete Service"
+                            aria-label={`Delete ${service.serviceName}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

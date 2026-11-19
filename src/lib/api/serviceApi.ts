@@ -1,18 +1,20 @@
 export interface SalonService {
   _id: string;
-  name: string;
+  serviceName: string;  
   image: string;
   category: string;
   price: number;
   duration: string;
-  shortDescription: string;
+  shortDescription?: string;
   description: string;
   isActive?: boolean;
+  status?: "active" | "inactive";
   createdBy?: string;
   createdAt?: string;
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 
 export async function getSalonServices(creatorEmail?: string): Promise<SalonService[]> {
   try {
@@ -22,7 +24,6 @@ export async function getSalonServices(creatorEmail?: string): Promise<SalonServ
       ? `?createdBy=${encodeURIComponent(creatorEmail.trim().toLowerCase())}`
       : "";
 
-    // Fetch salon services from the backend API
     // get the latest data
     const response = await fetch(`${API_URL}/services${query}`, {
       cache: "no-store",
@@ -48,5 +49,27 @@ export async function getSalonServices(creatorEmail?: string): Promise<SalonServ
   } catch (error: unknown) {
     console.error("Error fetching services:", error);
     return [];
+  }
+}
+
+// Fetch single salon service details by ID
+export async function getServiceById(serviceId: string): Promise<SalonService | null> {
+  try {
+    const response = await fetch(`${API_URL}/services/${serviceId}`, {
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to load service details.");
+    }
+
+    if (result && typeof result === "object" && result.data) {
+      return result.data as SalonService;
+    }
+    return result as SalonService;
+  } catch (error: unknown) {
+    console.error("Error fetching service details:", error);
+    return null;
   }
 }
