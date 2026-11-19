@@ -45,7 +45,7 @@ export function Navbar() {
   const navLinks: NavLinkItem[] = useMemo(() => {
     const baseLinks: NavLinkItem[] = [
       { label: "Home", href: "/" },
-      { label: "Browse Services", href: "/browse-services" },
+      { label: "Browse Services", href: "/services" },
     ];
 
     if (isAuthenticated) {
