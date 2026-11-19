@@ -1,11 +1,21 @@
-import React from 'react';
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 
-const dashboardPage = () => {
-    return (
-        <div>
-            <h2>dashboard page</h2>
-        </div>
-    );
-};
+export default async function DashboardRootPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-export default dashboardPage;
+  if (!session || !session.user) {
+    redirect("/login");
+  }
+
+  const role = (session.user as { role?: string }).role || "customer";
+
+  if (role === "admin") {
+    redirect("/dashboard/admin");
+  } else {
+    redirect("/dashboard/customer");
+  }
+}
