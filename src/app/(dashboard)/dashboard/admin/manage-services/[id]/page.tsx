@@ -16,6 +16,7 @@ import {
   AlertCircle,
   ShieldAlert,
   UserCheck,
+  Sparkles,
 } from "lucide-react";
 
 // Format a readable display name from creator email
@@ -73,10 +74,15 @@ export default function ServiceDetailsPage() {
     };
   }, [serviceId]);
 
+  const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const isAdmin = userRole === "admin";
+  const backHref = isAdmin ? "/dashboard/admin/manage-services" : "/services";
+  const backLabel = isAdmin ? "Manage Services" : "Browse Services";
+
   if (isSessionLoading || isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center gap-2.5 text-xs text-stone-400">
-        <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+      <div className="min-h-[60vh] flex items-center justify-center gap-3 text-base font-medium text-stone-300">
+        <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
         <span>Loading service details...</span>
       </div>
     );
@@ -85,18 +91,20 @@ export default function ServiceDetailsPage() {
   if (errorMsg || !service) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-14">
-        <div className="rounded-3xl border border-rose-500/30 bg-stone-950/90 p-7 text-center space-y-4 shadow-2xl">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-500/25 bg-rose-500/10 text-rose-400">
-            <AlertCircle className="h-5 w-5" />
+        <div className="rounded-3xl border border-rose-500/35 bg-stone-950/95 p-8 text-center space-y-5 shadow-2xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/15 text-rose-400">
+            <AlertCircle className="h-6 w-6" />
           </div>
-          <h1 className="text-lg font-semibold text-white">Service Not Found</h1>
-          <p className="text-xs text-stone-400">{errorMsg}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">
+            Service Not Found
+          </h1>
+          <p className="text-sm sm:text-base text-stone-300">{errorMsg}</p>
           <Link
-            href="/dashboard/admin/manage-services"
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-800 bg-stone-900 px-4 py-2 text-xs font-medium text-stone-200 hover:border-amber-500/40 hover:text-amber-300 transition"
+            href={backHref}
+            className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-400/35 bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/50 px-6 py-3 text-sm sm:text-base font-bold text-amber-200 shadow-lg shadow-black/30 hover:border-amber-400 hover:text-amber-300 transition"
           >
             <ArrowLeft className="h-4 w-4 text-amber-400" />
-            <span>Manage Services</span>
+            <span>{backLabel}</span>
           </Link>
         </div>
       </div>
@@ -105,64 +113,63 @@ export default function ServiceDetailsPage() {
 
   const isServiceActive =
     service.isActive !== false && service.status !== "inactive";
-  const userRole = (session?.user as { role?: string } | undefined)?.role;
   const isCustomer = userRole === "customer";
   const canBook = isServiceActive && isCustomer;
   const creatorDisplayName = formatCreatorName(service.createdBy);
 
   return (
-    <section className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section className="max-w-5xl mx-auto px-4 py-7 space-y-6">
       {/* Top navigation bar */}
       <div className="flex items-center justify-between">
         <Link
-          href="/dashboard/admin/manage-services"
-          className="inline-flex items-center gap-2 rounded-xl border border-amber-500/25 bg-stone-950/90 px-4 py-2 text-xs font-semibold text-stone-200 hover:border-amber-400/50 hover:text-amber-300 transition shadow-sm"
+          href={backHref}
+          className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-400/35 bg-gradient-to-r from-stone-950 via-stone-900 to-amber-950/45 px-5 py-3 text-sm sm:text-base font-bold text-amber-200 shadow-lg shadow-black/30 hover:border-amber-400 hover:text-amber-300 hover:-translate-x-0.5 transition duration-200"
         >
           <ArrowLeft className="h-4 w-4 text-amber-400" />
-          <span>Manage Services</span>
+          <span>{backLabel}</span>
         </Link>
       </div>
 
       {/* Fancy details card */}
-      <div className="relative overflow-hidden rounded-3xl border border-stone-800/80 bg-gradient-to-br from-stone-950 via-stone-950 to-stone-900/80 p-6 sm:p-8 shadow-2xl space-y-7">
-        <div className="pointer-events-none -top-24 -right-24 h-64 w-64 rounded-full bg-amber-500/10 blur-3xl absolute" />
+      <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-stone-950 via-stone-950 to-stone-900/90 p-6 sm:p-8 shadow-2xl space-y-7">
+        <div className="pointer-events-none -top-24 -right-24 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl absolute" />
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-7 items-start">
           {/* Image frame */}
           <div className="md:col-span-5">
-            <div className="overflow-hidden rounded-2xl border border-stone-800/90 bg-stone-900 shadow-lg group">
+            <div className="overflow-hidden rounded-2xl border border-amber-500/20 bg-stone-900 shadow-xl group">
               {service.image ? (
                 <img
                   src={service.image}
                   alt={service.serviceName}
-                  className="h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="h-64 sm:h-72 w-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
-                <div className="flex h-64 w-full items-center justify-center text-amber-400">
-                  <Scissors className="h-10 w-10" />
+                <div className="flex h-64 sm:h-72 w-full items-center justify-center text-amber-400">
+                  <Scissors className="h-12 w-12" />
                 </div>
               )}
             </div>
           </div>
 
           {/* Info & booking trigger */}
-          <div className="md:col-span-7 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
-                <Tag className="h-3.5 w-3.5" />
+          <div className="md:col-span-7 space-y-5">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-2 rounded-xl border border-amber-400/35 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-4 py-2 text-sm font-semibold text-amber-200 shadow-sm">
+                <Tag className="h-4 w-4 text-amber-400" />
                 {service.category}
               </span>
 
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-stone-800 bg-stone-900/90 px-3 py-1 text-xs text-stone-300">
-                <Clock className="h-3.5 w-3.5 text-amber-400" />
+              <span className="inline-flex items-center gap-2 rounded-xl border border-stone-700/90 bg-stone-900/90 px-4 py-2 text-sm font-semibold text-stone-200 shadow-sm">
+                <Clock className="h-4 w-4 text-amber-400" />
                 {service.duration}
               </span>
 
               <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${
+                className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-bold shadow-sm ${
                   isServiceActive
-                    ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border border-stone-700 bg-stone-800 text-stone-400"
+                    ? "border border-emerald-400/35 bg-emerald-500/15 text-emerald-300"
+                    : "border border-stone-700 bg-stone-800 text-stone-300"
                 }`}
               >
                 {isServiceActive ? "Active" : "Inactive"}
@@ -170,45 +177,45 @@ export default function ServiceDetailsPage() {
             </div>
 
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">
                 {service.serviceName}
               </h1>
               {service.shortDescription && (
-                <p className="text-xs sm:text-sm text-stone-400 mt-1.5 leading-relaxed">
+                <p className="text-sm sm:text-base text-stone-300 mt-2 leading-relaxed">
                   {service.shortDescription}
                 </p>
               )}
             </div>
 
             {/* Created by badge */}
-            <div className="inline-flex items-center gap-2.5 rounded-xl border border-stone-800/90 bg-stone-900/70 px-3.5 py-2 text-xs">
+            <div className="inline-flex flex-wrap items-center gap-2.5 rounded-2xl border border-amber-500/20 bg-stone-900/80 px-4 py-2.5 text-sm shadow-sm">
               <UserCheck className="h-4 w-4 text-amber-400 shrink-0" />
               <span className="text-stone-400">Created by</span>
-              <span className="font-semibold text-white">
+              <span className="font-bold text-white">
                 {creatorDisplayName}
               </span>
               {service.createdBy && (
-                <span className="text-[11px] text-stone-500 hidden sm:inline">
+                <span className="text-xs sm:text-sm text-stone-400">
                   ({service.createdBy})
                 </span>
               )}
             </div>
 
             {/* Price & duration highlight card */}
-            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-stone-800/80 bg-stone-900/60 p-4">
+            <div className="grid grid-cols-2 gap-4 rounded-2xl border border-amber-500/20 bg-stone-900/70 p-4 sm:p-5 shadow-inner">
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-stone-400 block">
+                <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-stone-400 block">
                   Price
                 </span>
-                <span className="text-2xl font-bold text-amber-400 mt-0.5 block">
+                <span className="text-2xl sm:text-3xl font-bold text-amber-400 mt-1 block">
                   ৳{Number(service.price).toLocaleString()}
                 </span>
               </div>
-              <div className="border-l border-stone-800 pl-4">
-                <span className="text-[11px] uppercase tracking-wider text-stone-400 block">
+              <div className="border-l border-stone-800 pl-4 sm:pl-5">
+                <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-stone-400 block">
                   Duration
                 </span>
-                <span className="text-sm font-semibold text-stone-200 mt-1.5 block">
+                <span className="text-base sm:text-lg font-bold text-stone-100 mt-1.5 block">
                   {service.duration}
                 </span>
               </div>
@@ -217,13 +224,13 @@ export default function ServiceDetailsPage() {
             {/* Role & active status enforcement */}
             <div className="pt-1">
               {!isServiceActive ? (
-                <div className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-gradient-to-r from-rose-500/15 via-rose-950/30 to-stone-900/60 px-3.5 py-2 text-xs font-medium text-rose-200 shadow-sm">
-                  <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400" />
+                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-950/40 to-stone-900/70 px-4 py-3 text-sm font-semibold text-rose-200 shadow-md">
+                  <ShieldAlert className="h-5 w-5 shrink-0 text-rose-400" />
                   <span>This service is currently inactive.</span>
                 </div>
               ) : !isCustomer ? (
-                <div className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-stone-900/80 to-stone-900/50 px-3.5 py-2 text-xs font-medium text-amber-200 shadow-sm">
-                  <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400" />
+                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-500/35 bg-gradient-to-r from-amber-500/20 via-stone-900/90 to-stone-900/60 px-4 py-3 text-sm font-semibold text-amber-200 shadow-md">
+                  <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400" />
                   <span>
                     Only customer accounts can book appointments (Admin/other
                     roles cannot book).
@@ -233,9 +240,13 @@ export default function ServiceDetailsPage() {
                 <button
                   type="button"
                   onClick={() => setShowBookingForm((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-3 text-xs font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition cursor-pointer"
+                  className="inline-flex items-center gap-2.5 rounded-2xl border border-amber-300/50 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 px-6 py-3.5 text-sm sm:text-base font-extrabold text-stone-950 shadow-xl shadow-amber-500/25 hover:from-amber-300 hover:via-amber-400 hover:to-amber-500 hover:-translate-y-0.5 transition duration-200 cursor-pointer"
                 >
-                  <Calendar className="h-4 w-4" />
+                  {showBookingForm ? (
+                    <Calendar className="h-5 w-5" />
+                  ) : (
+                    <Sparkles className="h-5 w-5" />
+                  )}
                   <span>
                     {showBookingForm
                       ? "Hide Booking Form"
@@ -248,11 +259,11 @@ export default function ServiceDetailsPage() {
         </div>
 
         {/* Service description card */}
-        <div className="relative z-10 rounded-2xl border border-stone-800/80 bg-stone-900/45 p-5 sm:p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2.5">
+        <div className="relative z-10 rounded-2xl border border-amber-500/15 bg-stone-900/55 p-5 sm:p-6">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-amber-300 mb-3">
             Service Description
           </h2>
-          <p className="text-sm leading-relaxed text-stone-300 whitespace-pre-line">
+          <p className="text-sm sm:text-base leading-relaxed text-stone-200 whitespace-pre-line">
             {service.description || "No detailed description provided."}
           </p>
         </div>
@@ -265,6 +276,10 @@ export default function ServiceDetailsPage() {
               serviceName={service.serviceName}
               price={Number(service.price) || 0}
               duration={service.duration}
+              customerId={session?.user?.id}
+              customerName={session?.user?.name || ""}
+              customerEmail={session?.user?.email || ""}
+              customerRole={userRole || "customer"}
               onClose={() => setShowBookingForm(false)}
             />
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createAppointment } from "@/lib/action/appointmentActions";
 import {
   Calendar,
@@ -17,8 +17,24 @@ interface BookAppointmentFormProps {
   serviceName: string;
   price: number;
   duration: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerRole?: string;
   onClose?: () => void;
   onSuccess?: (message: string) => void;
+}
+
+interface SessionUserInfo {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
+interface ToastState {
+  type: "success" | "error";
+  message: string;
 }
 
 const TIME_SLOTS = [
@@ -31,30 +47,167 @@ const TIME_SLOTS = [
   "07:30 PM",
 ];
 
+// Safely resolve current user details from session API or browser storage
+const resolveCurrentUser = async (): Promise<SessionUserInfo> => {
+  try {
+    const res = await fetch("/api/auth/get-session", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const user = data?.user ?? data?.data?.user ?? data?.session?.user;
+      if (user && typeof user === "object") {
+        return {
+          id:
+            typeof user.id === "string"
+              ? user.id
+              : typeof user._id === "string"
+                ? user._id
+                : "",
+          name: typeof user.name === "string" ? user.name : "",
+          email: typeof user.email === "string" ? user.email : "",
+          role: typeof user.role === "string" ? user.role : "customer",
+        };
+      }
+    }
+  } catch {
+    // Fallback to localStorage if session endpoint is not used
+  }
+
+  if (typeof window !== "undefined") {
+    const candidateKeys = ["user", "authUser", "salonbook_user", "currentUser"];
+    for (const key of candidateKeys) {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        const u = parsed?.user ?? parsed;
+        if (u && typeof u === "object") {
+          return {
+            id:
+              typeof u.id === "string"
+                ? u.id
+                : typeof u._id === "string"
+                  ? u._id
+                  : "",
+            name: typeof u.name === "string" ? u.name : "",
+            email: typeof u.email === "string" ? u.email : "",
+            role: typeof u.role === "string" ? u.role : "customer",
+          };
+        }
+      } catch {
+        // Ignore malformed JSON
+      }
+    }
+  }
+
+  return {};
+};
+
 export function BookAppointmentForm({
   serviceId,
   serviceName,
   price,
   duration,
+  customerId,
+  customerName,
+  customerEmail,
+  customerRole,
   onClose,
   onSuccess,
 }: BookAppointmentFormProps) {
   const [appointmentDate, setAppointmentDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
   const [message, setMessage] = useState("");
+  const [sessionUser, setSessionUser] = useState<SessionUserInfo>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, message: msg });
+  };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    let active = true;
+    resolveCurrentUser().then((info) => {
+      if (active) setSessionUser(info);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const todayIso = new Date().toISOString().split("T")[0];
 
+  const openDatePicker = () => {
+    const input = dateInputRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === "function") {
+      try {
+        input.showPicker();
+      } catch {
+        input.focus();
+      }
+    } else {
+      input.focus();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    setToast(null);
+
+    const latestUser = await resolveCurrentUser();
+    const finalEmail = (
+      customerEmail ||
+      sessionUser.email ||
+      latestUser.email ||
+      ""
+    ).trim();
+    const finalName = (
+      customerName ||
+      sessionUser.name ||
+      latestUser.name ||
+      ""
+    ).trim();
+    const finalId = (
+      customerId ||
+      sessionUser.id ||
+      latestUser.id ||
+      ""
+    ).trim();
+    const finalRole = (
+      customerRole ||
+      sessionUser.role ||
+      latestUser.role ||
+      "customer"
+    ).trim();
+
+    if (!serviceId) {
+      showToast("error", "Service ID is missing. Please refresh the page.");
+      return;
+    }
+
+    if (!finalEmail) {
+      showToast(
+        "error",
+        "Please sign in with your account to book an appointment."
+      );
+      return;
+    }
 
     if (!appointmentDate || !timeSlot) {
-      setErrorMsg("Please select both a date and a time slot.");
+      showToast("error", "Please select both a date and a time slot.");
       return;
     }
 
@@ -64,170 +217,206 @@ export function BookAppointmentForm({
       appointmentDate,
       timeSlot,
       message,
+      customerId: finalId,
+      customerName: finalName,
+      customerEmail: finalEmail,
+      customerRole: finalRole,
     });
     setIsSubmitting(false);
 
     if (res.success) {
       const msg = res.message || "Appointment booked successfully!";
-      setSuccessMsg(msg);
+      showToast("success", msg);
       setAppointmentDate("");
       setTimeSlot("");
       setMessage("");
       onSuccess?.(msg);
     } else {
-      setErrorMsg(res.message || "Failed to book appointment.");
+      showToast("error", res.message || "Failed to book appointment.");
     }
   };
 
   return (
-    <div className="rounded-3xl border border-amber-500/25 bg-stone-950/90 p-6 sm:p-7 shadow-2xl space-y-5">
-      {/* Form header */}
-      <div className="flex items-start justify-between gap-4 border-b border-stone-800/80 pb-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-400">
-            Request Appointment
-          </p>
-          <h3 className="text-lg font-bold text-white mt-0.5">
-            {serviceName}
-          </h3>
-          <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-stone-400">
-            <span>
-              Fee:{" "}
-              <strong className="text-amber-400">
-                ৳{Number(price).toLocaleString()}
-              </strong>
-            </span>
-            <span>•</span>
-            <span>
-              Duration: <strong className="text-stone-200">{duration}</strong>
-            </span>
-          </div>
-        </div>
+    <>
+      {/* Top-Right Toast Notification */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3.5 max-w-md rounded-2xl border px-5 py-4 text-sm sm:text-base font-semibold shadow-2xl backdrop-blur-md transition-all duration-300 ${
+            toast.type === "success"
+              ? "border-emerald-400/50 bg-stone-950/95 text-emerald-200 shadow-emerald-950/50"
+              : "border-rose-400/50 bg-stone-950/95 text-rose-200 shadow-rose-950/50"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+          ) : (
+            <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
+          )}
 
-        {onClose && (
+          <span className="leading-snug">{toast.message}</span>
+
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Close booking form"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-stone-800 bg-stone-900 text-stone-400 hover:text-white hover:border-stone-700 transition cursor-pointer"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss notification"
+            className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-800 hover:text-white transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
-        )}
-      </div>
-
-      {/* Feedback messages */}
-      {errorMsg && (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-          <span>{errorMsg}</span>
         </div>
       )}
 
-      {successMsg && (
-        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-300">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Appointment Date */}
-        <div>
-          <label
-            htmlFor="appointmentDate"
-            className="flex items-center gap-1.5 text-xs font-medium text-stone-300 mb-1.5"
-          >
-            <Calendar className="h-3.5 w-3.5 text-amber-400" />
-            <span>Preferred Date</span>
-          </label>
-          <input
-            id="appointmentDate"
-            name="appointmentDate"
-            type="date"
-            min={todayIso}
-            required
-            value={appointmentDate}
-            onChange={(e) => setAppointmentDate(e.target.value)}
-            className="w-full rounded-xl border border-stone-800 bg-stone-900/85 px-4 py-2.5 text-xs text-white focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
-          />
-        </div>
-
-        {/* Time Slot */}
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-stone-300 mb-2">
-            <Clock className="h-3.5 w-3.5 text-amber-400" />
-            <span>Preferred Time Slot</span>
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {TIME_SLOTS.map((slot) => {
-              const isSelected = timeSlot === slot;
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => setTimeSlot(slot)}
-                  className={`rounded-xl border px-3 py-2 text-xs font-medium transition cursor-pointer ${
-                    isSelected
-                      ? "border-amber-400 bg-amber-500 text-stone-950 font-semibold shadow-sm"
-                      : "border-stone-800 bg-stone-900/75 text-stone-300 hover:border-amber-500/40 hover:text-white"
-                  }`}
-                >
-                  {slot}
-                </button>
-              );
-            })}
+      <div className="rounded-3xl border border-amber-500/30 bg-stone-950/95 p-6 sm:p-8 shadow-2xl space-y-6">
+        {/* Form header */}
+        <div className="flex items-start justify-between gap-4 border-b border-stone-800 pb-5">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wider text-amber-400">
+              Request Appointment
+            </p>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mt-1">
+              {serviceName}
+            </h3>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-stone-300">
+              <span>
+                Fee:{" "}
+                <strong className="text-amber-400 font-bold">
+                  ৳{Number(price).toLocaleString()}
+                </strong>
+              </span>
+              <span className="text-stone-600">•</span>
+              <span>
+                Duration:{" "}
+                <strong className="text-stone-100 font-semibold">
+                  {duration}
+                </strong>
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Optional Message */}
-        <div>
-          <label
-            htmlFor="bookingMessage"
-            className="flex items-center gap-1.5 text-xs font-medium text-stone-300 mb-1.5"
-          >
-            <MessageSquare className="h-3.5 w-3.5 text-amber-400" />
-            <span>Message / Notes (Optional)</span>
-          </label>
-          <textarea
-            id="bookingMessage"
-            name="message"
-            rows={2}
-            placeholder="Any styling note or request..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full rounded-xl border border-stone-800 bg-stone-900/85 px-4 py-2.5 text-xs text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition resize-none"
-          />
-        </div>
-
-        <div className="pt-1 flex items-center justify-end gap-3">
           {onClose && (
             <button
               type="button"
-              disabled={isSubmitting}
               onClick={onClose}
-              className="rounded-xl border border-stone-800 bg-stone-900 px-4 py-2.5 text-xs font-medium text-stone-300 hover:text-white hover:border-stone-700 disabled:opacity-50 transition cursor-pointer"
+              aria-label="Close booking form"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-stone-800 bg-stone-900 text-stone-300 hover:text-white hover:border-stone-700 transition cursor-pointer"
             >
-              Cancel
+              <X className="h-5 w-5" />
             </button>
           )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 transition cursor-pointer"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Booking...</span>
-              </>
-            ) : (
-              <span>Confirm Appointment</span>
-            )}
-          </button>
         </div>
-      </form>
-    </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Appointment Date with Bright Yellow/Gold Calendar Icon */}
+          <div>
+            <label
+              htmlFor="appointmentDate"
+              className="flex items-center gap-2 text-sm font-semibold text-stone-200 mb-2"
+            >
+              <Calendar className="h-4 w-4 text-yellow-400" />
+              <span>Preferred Date</span>
+            </label>
+            <div className="relative flex items-center">
+              <input
+                ref={dateInputRef}
+                id="appointmentDate"
+                name="appointmentDate"
+                type="date"
+                min={todayIso}
+                required
+                value={appointmentDate}
+                onClick={openDatePicker}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+                className="w-full rounded-xl border border-stone-700 bg-stone-900 pl-4 pr-12 py-3 text-base text-white focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400/20 transition cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              />
+              <button
+                type="button"
+                onClick={openDatePicker}
+                aria-label="Open calendar picker"
+                className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-400/15 text-yellow-400 hover:bg-yellow-400/25 hover:text-yellow-300 transition cursor-pointer"
+              >
+                <Calendar className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Time Slot */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-200 mb-2.5">
+              <Clock className="h-4 w-4 text-amber-400" />
+              <span>Preferred Time Slot</span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {TIME_SLOTS.map((slot) => {
+                const isSelected = timeSlot === slot;
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setTimeSlot(slot)}
+                    className={`rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition cursor-pointer ${
+                      isSelected
+                        ? "border-amber-400 bg-amber-500 text-stone-950 font-bold shadow-md"
+                        : "border-stone-700 bg-stone-900 text-stone-200 hover:border-amber-500/50 hover:text-white"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Optional Message */}
+          <div>
+            <label
+              htmlFor="bookingMessage"
+              className="flex items-center gap-2 text-sm font-semibold text-stone-200 mb-2"
+            >
+              <MessageSquare className="h-4 w-4 text-amber-400" />
+              <span>Message / Notes (Optional)</span>
+            </label>
+            <textarea
+              id="bookingMessage"
+              name="message"
+              rows={3}
+              placeholder="Any styling note or request..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full rounded-xl border border-stone-700 bg-stone-900 px-4 py-3 text-base text-white placeholder-stone-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition resize-none"
+            />
+          </div>
+
+          <div className="pt-2 flex items-center justify-end gap-3">
+            {onClose && (
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={onClose}
+                className="rounded-xl border border-stone-700 bg-stone-900 px-5 py-3 text-sm font-semibold text-stone-200 hover:text-white hover:border-stone-600 disabled:opacity-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm sm:text-base font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 transition cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Booking...</span>
+                </>
+              ) : (
+                <span>Confirm Appointment</span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
   );
 }
