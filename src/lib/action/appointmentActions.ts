@@ -151,3 +151,82 @@ export async function cancelAppointment(appointmentId: string): Promise<{
     };
   }
 }
+
+
+// Admin: Get all appointments across all customers
+export async function getAllAppointments(): Promise<{
+  success: boolean;
+  data: SalonAppointment[];
+  message?: string;
+}> {
+  try {
+    const response = await fetch(`${API_URL}/appointments`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to load all appointments.");
+    }
+
+    const allList: SalonAppointment[] = Array.isArray(result)
+      ? result
+      : Array.isArray(result.data)
+        ? result.data
+        : [];
+
+    return {
+      success: true,
+      data: allList,
+    };
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch appointments.";
+    return {
+      success: false,
+      data: [],
+      message: errorMessage,
+    };
+  }
+}
+
+// Admin: Update appointment status (confirmed, completed, cancelled, pending)
+export async function updateAppointmentStatus(
+  appointmentId: string,
+  status: "pending" | "confirmed" | "completed" | "cancelled"
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  try {
+    const response = await fetch(`${API_URL}/appointments/${appointmentId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to update appointment status.");
+    }
+
+    return {
+      success: true,
+      message: result.message || `Appointment ${status} successfully.`,
+    };
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unable to update appointment status.";
+    return {
+      success: false,
+      message: errorMessage,
+    };
+  }
+}

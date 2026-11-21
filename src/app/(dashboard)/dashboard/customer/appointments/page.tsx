@@ -27,7 +27,6 @@ import {
   X,
 } from "lucide-react";
 
-
 interface ToastState {
   type: "success" | "error";
   message: string;
@@ -187,6 +186,37 @@ export default function MyAppointmentsPage() {
         message: res.message,
       });
     }
+  };
+
+  const handlePayNow = (item: SalonAppointment) => {
+    const statusText = String(item.status || "pending").toLowerCase();
+    const paymentText = String(item.paymentStatus || "unpaid").toLowerCase();
+
+    if (statusText !== "confirmed") {
+      setToast({
+        type: "error",
+        message: "You can only pay for confirmed appointments.",
+      });
+      return;
+    }
+
+    if (paymentText === "paid") {
+      setToast({
+        type: "error",
+        message: "This appointment is already paid.",
+      });
+      return;
+    }
+
+    const params = new URLSearchParams({
+      appointmentId: item._id,
+      serviceName: item.serviceName || "Salon Service",
+      amount: String(Number(item.servicePrice || 20)),
+      date: formatAppointmentDate(item.appointmentDate),
+      timeSlot: item.timeSlot || "",
+    });
+
+    router.push(`/checkout?${params.toString()}`);
   };
 
   const isLoading =
@@ -382,7 +412,7 @@ export default function MyAppointmentsPage() {
                         {/* Price */}
                         <td className="whitespace-nowrap px-4 py-4">
                           <span className="inline-flex rounded-md border border-amber-400/35 bg-amber-500/10 px-3.5 py-1.5 text-base font-bold text-amber-300 sm:text-lg">
-                            ৳{Number(item.servicePrice || 0).toLocaleString()}
+                            ${Number(item.servicePrice || 0).toLocaleString()}
                           </span>
                         </td>
 
@@ -440,7 +470,10 @@ export default function MyAppointmentsPage() {
 
                                 <button
                                   type="button"
-                                  onClick={() => setOpenMenuId(null)}
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    handlePayNow(item);
+                                  }}
                                   className="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3.5 py-2.5 text-sm font-semibold text-stone-200 transition hover:bg-[#241F18] hover:text-emerald-300 sm:text-base"
                                 >
                                   <CreditCard className="h-4 w-4 text-emerald-400" />
