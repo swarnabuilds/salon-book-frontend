@@ -28,20 +28,20 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 function readCustomerList(payload: unknown): CustomerUser[] {
-  if (Array.isArray(payload)) {
-    return payload as CustomerUser[];
-  }
+  const list = Array.isArray(payload)
+    ? (payload as CustomerUser[])
+    : payload &&
+        typeof payload === "object" &&
+        "data" in payload &&
+        Array.isArray((payload as { data?: unknown }).data)
+      ? (payload as { data: CustomerUser[] }).data
+      : [];
 
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "data" in payload &&
-    Array.isArray((payload as { data?: unknown }).data)
-  ) {
-    return (payload as { data: CustomerUser[] }).data;
-  }
-
-  return [];
+  // Defensive UI filter: admins must never appear in "Manage Customers",
+  // even if the API response changes in the future.
+  return list.filter(
+    (user) => String(user.role || "customer").trim().toLowerCase() !== "admin"
+  );
 }
 
 // Fetch all registered customers for the admin dashboard.

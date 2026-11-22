@@ -5,11 +5,26 @@ import { auth } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
+// Redirect URLs come from trusted server configuration, never from Origin or
+// Referer headers supplied by a browser.
+function getAppUrl() {
+  const configuredUrl =
+    process.env.BETTER_AUTH_URL ||
+    process.env.CLIENT_URL ||
+    'http://localhost:3000'
+
+  return String(configuredUrl)
+    .split(',')[0]
+    .trim()
+    .replace(/\/$/, '')
+}
+
 interface AppointmentResponse {
   success: boolean
   message?: string
   data?: {
     _id: string
+    customerId?: string
     customerEmail?: string
     serviceName?: string
     servicePrice?: number
@@ -21,7 +36,6 @@ interface AppointmentResponse {
 export async function POST(request: Request) {
   try {
     const headersList = await headers()
-    const origin = headersList.get('origin') || headersList.get('referer') || ''
 
     // Retrieve the logged-in user session
     const authSession = await auth.api.getSession({
@@ -32,6 +46,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Please sign in before paying for an appointment.' },
         { status: 401 }
+      )
+    }
+
+    if (Boolean((authSession.user as { isBlocked?: boolean }).isBlocked)) {
+      return NextResponse.json(
+        { error: 'This account is blocked.' },
+        { status: 403 }
       )
     }
 
@@ -91,6 +112,28 @@ export async function POST(request: Request) {
     }
 
     const appointment = appointmentBody.data
+
+    // Even though the appointment API already scopes reads to the signed-in
+    // customer, verify ownership again before creating a Stripe session.
+    const sessionEmail = String(authSession.user.email || '')
+      .trim()
+      .toLowerCase()
+    const appointmentEmail = String(appointment.customerEmail || '')
+      .trim()
+      .toLowerCase()
+    const appointmentCustomerId = String(appointment.customerId || '').trim()
+    const ownsAppointment =
+      (Boolean(sessionEmail) && appointmentEmail === sessionEmail) ||
+      (Boolean(authSession.user.id) &&
+        appointmentCustomerId === authSession.user.id)
+
+    if (!ownsAppointment) {
+      return NextResponse.json(
+        { error: 'You can only pay for your own appointments.' },
+        { status: 403 }
+      )
+    }
+
     const status = String(appointment.status || 'pending').toLowerCase()
     const paymentStatus = String(
       appointment.paymentStatus || 'unpaid'
@@ -142,8 +185,10 @@ export async function POST(request: Request) {
         appointmentId,
         customerEmail: authSession.user.email || '',
       },
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout?canceled=true`,
+      success_url: `${getAppUrl()}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${getAppUrl()}/checkout?appointmentId=${encodeURIComponent(
+        appointmentId
+      )}&canceled=true`,
       integration_identifier: 'salon_book_web_001',
     })
 

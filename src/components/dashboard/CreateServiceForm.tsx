@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 import { createSalonService, CreateServicePayload } from "@/lib/action/serviceActions";
 import { SALON_CATEGORIES } from "@/lib/serviceCategories";
 import { uploadImageToImgbb } from "@/lib/uploadImage";
@@ -19,7 +18,6 @@ interface CreateServiceFormProps {
 }
 
 export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
-  const { data: session } = authClient.useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -51,12 +49,6 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
     e.preventDefault();
     setErrorMessage(null);
 
-    const creatorEmail = session?.user?.email?.trim() || "";
-    if (!creatorEmail) {
-      setErrorMessage("Authenticated user email is missing. Please log in again.");
-      return;
-    }
-
     if (!imageUrl) {
       setErrorMessage("Please upload a service image before publishing.");
       return;
@@ -77,7 +69,6 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
       shortDescription: String(formData.get("shortDescription") || "").trim(),
       description: String(formData.get("description") || "").trim(),
       isActive: formData.get("isActive") === "on",
-      createdBy: creatorEmail,
     };
 
     // Call backend service creation action

@@ -18,19 +18,8 @@ interface BookAppointmentFormProps {
   serviceName: string;
   price: number;
   duration: string | number;
-  customerId?: string;
-  customerName?: string;
-  customerEmail?: string;
-  customerRole?: string;
   onClose?: () => void;
   onSuccess?: (message: string) => void;
-}
-
-interface SessionUserInfo {
-  id?: string;
-  name?: string;
-  email?: string;
-  role?: string;
 }
 
 interface ToastState {
@@ -48,80 +37,19 @@ const TIME_SLOTS = [
   "07:30 PM",
 ];
 
-// Safely resolve current user details from session API or browser storage
-const resolveCurrentUser = async (): Promise<SessionUserInfo> => {
-  try {
-    const res = await fetch("/api/auth/get-session", {
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const user = data?.user ?? data?.data?.user ?? data?.session?.user;
-      if (user && typeof user === "object") {
-        return {
-          id:
-            typeof user.id === "string"
-              ? user.id
-              : typeof user._id === "string"
-                ? user._id
-                : "",
-          name: typeof user.name === "string" ? user.name : "",
-          email: typeof user.email === "string" ? user.email : "",
-          role: typeof user.role === "string" ? user.role : "customer",
-        };
-      }
-    }
-  } catch {
-    // Fallback to localStorage if session endpoint is not used
-  }
-
-  if (typeof window !== "undefined") {
-    const candidateKeys = ["user", "authUser", "salonbook_user", "currentUser"];
-    for (const key of candidateKeys) {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) continue;
-      try {
-        const parsed = JSON.parse(raw);
-        const u = parsed?.user ?? parsed;
-        if (u && typeof u === "object") {
-          return {
-            id:
-              typeof u.id === "string"
-                ? u.id
-                : typeof u._id === "string"
-                  ? u._id
-                  : "",
-            name: typeof u.name === "string" ? u.name : "",
-            email: typeof u.email === "string" ? u.email : "",
-            role: typeof u.role === "string" ? u.role : "customer",
-          };
-        }
-      } catch {
-        // Ignore malformed JSON
-      }
-    }
-  }
-
-  return {};
-};
-
+// Customer identity is never collected here. The server derives it from the
+// authenticated session, so client-side values cannot impersonate another user.
 export function BookAppointmentForm({
   serviceId,
   serviceName,
   price,
   duration,
-  customerId,
-  customerName,
-  customerEmail,
-  customerRole,
   onClose,
   onSuccess,
 }: BookAppointmentFormProps) {
   const [appointmentDate, setAppointmentDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
   const [message, setMessage] = useState("");
-  const [sessionUser, setSessionUser] = useState<SessionUserInfo>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
@@ -137,16 +65,6 @@ export function BookAppointmentForm({
     }, 3500);
     return () => window.clearTimeout(timer);
   }, [toast]);
-
-  useEffect(() => {
-    let active = true;
-    resolveCurrentUser().then((info) => {
-      if (active) setSessionUser(info);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const todayIso = new Date().toISOString().split("T")[0];
 
@@ -168,42 +86,8 @@ export function BookAppointmentForm({
     e.preventDefault();
     setToast(null);
 
-    const latestUser = await resolveCurrentUser();
-    const finalEmail = (
-      customerEmail ||
-      sessionUser.email ||
-      latestUser.email ||
-      ""
-    ).trim();
-    const finalName = (
-      customerName ||
-      sessionUser.name ||
-      latestUser.name ||
-      ""
-    ).trim();
-    const finalId = (
-      customerId ||
-      sessionUser.id ||
-      latestUser.id ||
-      ""
-    ).trim();
-    const finalRole = (
-      customerRole ||
-      sessionUser.role ||
-      latestUser.role ||
-      "customer"
-    ).trim();
-
     if (!serviceId) {
       showToast("error", "Service ID is missing. Please refresh the page.");
-      return;
-    }
-
-    if (!finalEmail) {
-      showToast(
-        "error",
-        "Please sign in with your account to book an appointment."
-      );
       return;
     }
 
@@ -218,10 +102,6 @@ export function BookAppointmentForm({
       appointmentDate,
       timeSlot,
       message,
-      customerId: finalId,
-      customerName: finalName,
-      customerEmail: finalEmail,
-      customerRole: finalRole,
     });
     setIsSubmitting(false);
 

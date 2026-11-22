@@ -5,10 +5,6 @@ export interface CreateAppointmentPayload {
   appointmentDate: string;
   timeSlot: string;
   message?: string;
-  customerId?: string;
-  customerName?: string;
-  customerEmail?: string;
-  customerRole?: string;
 }
 
 export interface SalonAppointment {
@@ -68,27 +64,20 @@ export async function createAppointment(payload: CreateAppointmentPayload) {
 }
 
 
-//get appointment filter by user email
-export async function getMyAppointments(customerEmail: string): Promise<{
+// Load only the signed-in customer's appointments. No email or user id is
+// sent from the browser; the Express API scopes the query from the session.
+export async function getMyAppointments(): Promise<{
   success: boolean;
   data: SalonAppointment[];
   message?: string;
 }> {
   try {
-    const cleanEmail = customerEmail.trim().toLowerCase();
-    if (!cleanEmail) {
-      return { success: false, data: [], message: "Customer email is required." };
-    }
-
-    const response = await fetch(
-      `${API_URL}/appointments?email=${encodeURIComponent(cleanEmail)}`,
-      {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-        headers: await getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_URL}/appointments`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers: await getAuthHeaders(),
+    });
 
     const result = await response.json();
 
@@ -96,19 +85,11 @@ export async function getMyAppointments(customerEmail: string): Promise<{
       throw new Error(result.message || "Failed to load appointments.");
     }
 
-    const rawList: SalonAppointment[] = Array.isArray(result)
+    const ownAppointments: SalonAppointment[] = Array.isArray(result)
       ? result
       : Array.isArray(result.data)
         ? result.data
         : [];
-
-    // Strict rule: Customers can only view their own appointments
-    const ownAppointments = rawList.filter(
-      (item) =>
-        String(item.customerEmail || "")
-          .trim()
-          .toLowerCase() === cleanEmail
-    );
 
     return {
       success: true,

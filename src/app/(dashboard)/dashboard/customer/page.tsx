@@ -156,7 +156,7 @@ export default function CustomerOverviewPage() {
 
     let active = true;
 
-    getMyAppointments(userEmail).then((res) => {
+    getMyAppointments().then((res) => {
       if (!active) return;
 
       if (!res.success) {
@@ -213,7 +213,7 @@ export default function CustomerOverviewPage() {
     setIsLoading(true);
     setErrorMsg("");
 
-    const res = await getMyAppointments(userEmail);
+    const res = await getMyAppointments();
 
     if (!res.success) {
       setAppointments([]);

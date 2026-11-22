@@ -135,7 +135,7 @@ export default function CustomerProfilePage() {
 
     let active = true;
 
-    getMyAppointments(userEmail).then((res) => {
+    getMyAppointments().then((res) => {
       if (!active) return;
       setAppointments(res.success ? res.data : []);
     });

@@ -24,6 +24,11 @@ export async function GET() {
     role?: string;
     isBlocked?: boolean;
   };
+
+  if (Boolean(user.isBlocked)) {
+    return Response.json({ message: "This account is blocked." }, { status: 403 });
+  }
+
   const secret = process.env.BETTER_AUTH_SECRET;
 
   if (!secret) {

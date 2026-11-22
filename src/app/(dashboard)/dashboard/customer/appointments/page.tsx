@@ -205,7 +205,7 @@ export default function MyAppointmentsPage() {
 
     let isMounted = true;
 
-    getMyAppointments(userEmail).then((res) => {
+    getMyAppointments().then((res) => {
       if (!isMounted) return;
 
       if (!res.success) {
@@ -276,7 +276,7 @@ export default function MyAppointmentsPage() {
     setIsLoading(true);
     setErrorMsg("");
 
-    const res = await getMyAppointments(userEmail);
+    const res = await getMyAppointments();
 
     if (!res.success) {
       setAppointments([]);

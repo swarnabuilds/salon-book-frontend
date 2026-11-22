@@ -417,10 +417,6 @@ export default function ServiceDetailsView({
               serviceName={service.serviceName}
               price={Number(service.price) || 0}
               duration={service.duration}
-              customerId={session?.user?.id}
-              customerName={session?.user?.name || ""}
-              customerEmail={session?.user?.email || ""}
-              customerRole={userRole || "customer"}
               onClose={() => setShowBookingForm(false)}
             />
           </div>

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import {
   AlertCircle,
   ArrowLeft,
@@ -12,26 +14,30 @@ import CheckoutPaymentButton from "@/components/checkout-payment-button";
 interface CheckoutPageProps {
   searchParams: Promise<{
     appointmentId?: string;
-    serviceName?: string;
-    date?: string;
-    timeSlot?: string;
-    amount?: string;
     canceled?: string;
   }>;
 }
 
 interface AppointmentRecord {
   _id: string;
+  serviceName?: string;
+  appointmentDate?: string;
+  timeSlot?: string;
+  servicePrice?: number;
+  status?: string;
   paymentStatus?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-async function checkIsAppointmentPaid(appointmentId?: string): Promise<boolean> {
-  if (!appointmentId) return false;
+async function getAppointmentForCheckout(
+  appointmentId?: string
+): Promise<AppointmentRecord | null> {
+  if (!appointmentId) return null;
 
   try {
-    // The appointment API is session-scoped, so forward the browser cookie.
+    // The appointment API is session-scoped, so a customer can only load their
+    // own appointment here. Forward the browser cookie to preserve the session.
     const cookie = (await headers()).get("cookie") || "";
 
     const res = await fetch(
@@ -42,37 +48,77 @@ async function checkIsAppointmentPaid(appointmentId?: string): Promise<boolean> 
       }
     );
 
-    if (!res.ok) return false;
+    if (!res.ok) return null;
 
     const json = (await res.json()) as {
       success?: boolean;
       data?: AppointmentRecord;
     };
 
-    return String(json.data?.paymentStatus || "").toLowerCase() === "paid";
+    return json.data || null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export default async function CheckoutContent({
   searchParams,
 }: CheckoutPageProps) {
-  const {
-    appointmentId,
-    serviceName,
-    date,
-    timeSlot,
-    amount: rawAmount,
-    canceled,
-  } = await searchParams;
+  const headersList = await headers();
+  const authSession = await auth.api.getSession({ headers: headersList });
 
-  const parsedAmount = Number(rawAmount || 20);
-  const amount =
-    Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 20;
+  if (!authSession?.user) {
+    redirect("/signin");
+  }
 
-  // Check if this booking has already been paid
-  const isAlreadyPaid = await checkIsAppointmentPaid(appointmentId);
+  const signedInUser = authSession.user as {
+    role?: string | null;
+    isBlocked?: boolean;
+  };
+
+  if (Boolean(signedInUser.isBlocked)) {
+    redirect("/signin?blocked=1");
+  }
+
+  if (
+    String(signedInUser.role || "customer").trim().toLowerCase() !== "customer"
+  ) {
+    redirect("/dashboard/admin");
+  }
+
+  const { appointmentId, canceled } = await searchParams;
+
+  // Appointment details always come from the database, never from URL params.
+  const appointment = await getAppointmentForCheckout(appointmentId);
+
+  if (appointmentId && !appointment) {
+    return (
+      <section className="min-h-screen bg-[#110F0B] px-4 py-12 text-stone-100 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl rounded-2xl border border-stone-800 bg-[#181510] p-8 text-center">
+          <h1 className="text-2xl font-bold text-white">
+            Appointment not found
+          </h1>
+          <p className="mt-2 text-sm text-stone-400">
+            This appointment is unavailable or does not belong to your account.
+          </p>
+          <Link
+            href="/dashboard/customer/appointments"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#A68B5B] px-5 py-3 text-sm font-bold text-stone-950"
+          >
+            <ArrowLeft size={17} />
+            Back to My Appointments
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  const serviceName = appointment?.serviceName || "Salon Service";
+  const date = appointment?.appointmentDate || "Not specified";
+  const timeSlot = appointment?.timeSlot || "Not specified";
+  const amount = Number(appointment?.servicePrice || 0);
+  const isAlreadyPaid =
+    String(appointment?.paymentStatus || "").toLowerCase() === "paid";
 
   if (canceled) {
     console.log(
@@ -213,7 +259,6 @@ export default async function CheckoutContent({
             {/* Payment Button */}
             <CheckoutPaymentButton
               appointmentId={appointmentId || ""}
-              serviceName={serviceName || "Salon Service"}
               amount={amount}
               isAlreadyPaid={isAlreadyPaid}
             />

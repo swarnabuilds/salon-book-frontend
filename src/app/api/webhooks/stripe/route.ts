@@ -9,11 +9,20 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature') || ''
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+  const internalSecret = process.env.BETTER_AUTH_SECRET || ''
 
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET is not configured.')
     return NextResponse.json(
       { error: 'Webhook is not configured.' },
+      { status: 500 }
+    )
+  }
+
+  if (!internalSecret) {
+    console.error('BETTER_AUTH_SECRET is not configured.')
+    return NextResponse.json(
+      { error: 'Internal authentication is not configured.' },
       { status: 500 }
     )
   }
@@ -71,7 +80,7 @@ export async function POST(request: Request) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-internal-secret': process.env.BETTER_AUTH_SECRET || '',
+          'x-internal-secret': internalSecret,
         },
         body: JSON.stringify({
           paymentStatus: 'paid',

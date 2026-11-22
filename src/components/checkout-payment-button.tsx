@@ -5,14 +5,12 @@ import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 
 interface CheckoutPaymentButtonProps {
   appointmentId: string;
-  serviceName: string;
   amount: number;
   isAlreadyPaid?: boolean;
 }
 
 export default function CheckoutPaymentButton({
   appointmentId,
-  serviceName,
   amount,
   isAlreadyPaid = false,
 }: CheckoutPaymentButtonProps) {
@@ -36,8 +34,6 @@ export default function CheckoutPaymentButton({
       className="space-y-4"
     >
       <input type="hidden" name="appointmentId" value={appointmentId} />
-      <input type="hidden" name="serviceName" value={serviceName} />
-      <input type="hidden" name="amount" value={String(amount)} />
 
       <button
         type="submit"

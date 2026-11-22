@@ -10,7 +10,6 @@ export interface CreateServicePayload {
   shortDescription: string;
   description: string;
   isActive?: boolean;
-  createdBy: string;
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";

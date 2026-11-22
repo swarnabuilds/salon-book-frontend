@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   ArrowRight,
   CalendarCheck,
@@ -7,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { stripe } from "@/lib/stripe";
+import { auth } from "@/lib/auth";
 
 interface SuccessPageProps {
   searchParams: Promise<{
@@ -19,6 +22,30 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 export default async function PaymentSuccessPage({
   searchParams,
 }: SuccessPageProps) {
+  const headersList = await headers();
+  const authSession = await auth.api.getSession({ headers: headersList });
+
+  if (!authSession?.user) {
+    redirect("/signin");
+  }
+
+  const signedInUser = authSession.user as {
+    id: string;
+    email?: string | null;
+    role?: string | null;
+    isBlocked?: boolean;
+  };
+
+  if (Boolean(signedInUser.isBlocked)) {
+    redirect("/signin?blocked=1");
+  }
+
+  if (
+    String(signedInUser.role || "customer").trim().toLowerCase() !== "customer"
+  ) {
+    redirect("/dashboard/admin");
+  }
+
   const { session_id: sessionId } = await searchParams;
   let isPaid = false;
 
@@ -35,25 +62,39 @@ export default async function PaymentSuccessPage({
         ? checkoutSession.currency.toUpperCase()
         : "USD";
 
-      if (checkoutSession.payment_status === "paid") {
+      const sessionEmail = String(signedInUser.email || "")
+        .trim()
+        .toLowerCase()
+      const checkoutEmail = String(checkoutSession.metadata?.customerEmail || "")
+        .trim()
+        .toLowerCase()
+      const belongsToSignedInUser =
+        Boolean(sessionEmail) && checkoutEmail === sessionEmail;
+
+      if (checkoutSession.payment_status === "paid" && belongsToSignedInUser) {
         isPaid = true;
 
         // Update appointment paymentStatus and record transaction in MongoDB via Express backend
-        if (appointmentId) {
-          const patchRes = await fetch(`${API_URL}/appointments/${appointmentId}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-secret": process.env.BETTER_AUTH_SECRET || "",
-            },
-            body: JSON.stringify({
-              paymentStatus: "paid",
-              stripeSessionId: sessionId,
-              ...(paidAmount !== undefined ? { amount: paidAmount } : {}),
-              currency: paidCurrency,
-            }),
-            cache: "no-store",
-          });
+        const internalSecret = process.env.BETTER_AUTH_SECRET || "";
+
+        if (appointmentId && internalSecret) {
+          const patchRes = await fetch(
+            `${API_URL}/appointments/${appointmentId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "x-internal-secret": internalSecret,
+              },
+              body: JSON.stringify({
+                paymentStatus: "paid",
+                stripeSessionId: sessionId,
+                ...(paidAmount !== undefined ? { amount: paidAmount } : {}),
+                currency: paidCurrency,
+              }),
+              cache: "no-store",
+            }
+          );
 
           if (!patchRes.ok) {
             const errorText = await patchRes.text();

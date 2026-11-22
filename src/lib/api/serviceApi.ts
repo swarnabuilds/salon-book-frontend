@@ -11,23 +11,16 @@ export interface SalonService {
   description: string;
   isActive?: boolean;
   status?: "active" | "inactive";
-  createdBy?: string;
   createdAt?: string;
 }
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 
-export async function getSalonServices(creatorEmail?: string): Promise<SalonService[]> {
+export async function getSalonServices(): Promise<SalonService[]> {
   try {
-
-    // Create a query string if creatorEmail is provided
-    const query = creatorEmail
-      ? `?createdBy=${encodeURIComponent(creatorEmail.trim().toLowerCase())}`
-      : "";
-
     // get the latest data
-    const response = await fetch(`${API_URL}/services${query}`, {
+    const response = await fetch(`${API_URL}/services`, {
       cache: "no-store",
     });
 
