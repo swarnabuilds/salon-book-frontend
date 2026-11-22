@@ -532,7 +532,7 @@ export default function AdminAppointmentsPage() {
               <p className="mt-2 text-sm text-stone-400">
                 {hasFilters
                   ? "No appointments match your search or filter."
-                  : "Customer booking requests will appear here."}
+                  : "Bookings for your services will appear here."}
               </p>
               {hasFilters && (
                 <button

@@ -26,8 +26,8 @@ export interface TransactionListResult {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// Fetch every payment transaction. Used by the admin overview counters.
-export async function getTransactions(): Promise<TransactionListResult> {
+// Admin: fetch only transactions linked to this admin's own services.
+export async function getAdminTransactions(): Promise<TransactionListResult> {
   try {
     const response = await fetch(`${API_URL}/transactions`, {
       method: "GET",

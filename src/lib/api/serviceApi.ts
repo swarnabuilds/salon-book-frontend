@@ -79,7 +79,7 @@ export interface ServiceListResult {
 // reactivated from the Manage Services page.
 export async function getAdminServices(): Promise<ServiceListResult> {
   try {
-    const response = await fetch(`${API_URL}/services?includeInactive=true`, {
+    const response = await fetch(`${API_URL}/services?includeInactive=true&scope=admin`, {
       cache: "no-store",
       credentials: "include",
       headers: await getAuthHeaders(),

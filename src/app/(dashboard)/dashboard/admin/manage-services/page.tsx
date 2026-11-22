@@ -455,7 +455,7 @@ export default function ManageServicesPage() {
               <p className="mt-2 text-sm text-stone-400">
                 {hasFilters
                   ? "No services match your search or filter."
-                  : "Create your first salon service to start taking bookings."}
+                  : "Services you create will appear here."}
               </p>
               {hasFilters ? (
                 <button

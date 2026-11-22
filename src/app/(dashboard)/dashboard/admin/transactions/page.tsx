@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import {
-  getTransactions,
+  getAdminTransactions,
   type SalonTransaction,
 } from "@/lib/api/transactionApi";
 import { toast } from "sonner";
@@ -191,7 +191,7 @@ export default function AdminTransactionsPage() {
 
     let active = true;
 
-    getTransactions().then((result) => {
+    getAdminTransactions().then((result) => {
       if (!active) return;
 
       if (!result.success) {
@@ -273,7 +273,7 @@ export default function AdminTransactionsPage() {
     setIsLoading(true);
     setErrorMsg("");
 
-    const result = await getTransactions();
+    const result = await getAdminTransactions();
 
     if (!result.success) {
       setTransactions([]);
@@ -467,7 +467,7 @@ export default function AdminTransactionsPage() {
             <p className="mt-2 text-sm text-stone-400">
               {hasFilters
                 ? "No transactions match your search or filter."
-                : "Successful Stripe payments will appear here automatically."}
+                : "Payments for your services will appear here automatically."}
             </p>
             {hasFilters && (
               <button

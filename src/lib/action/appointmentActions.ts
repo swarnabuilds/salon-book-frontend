@@ -143,7 +143,7 @@ export async function cancelAppointment(appointmentId: string): Promise<{
 }
 
 
-// Admin: Get all appointments across all customers
+// Admin: get appointments for this admin's own services only.
 export async function getAllAppointments(): Promise<{
   success: boolean;
   data: SalonAppointment[];
@@ -193,15 +193,18 @@ export async function updateAppointmentStatus(
   message: string;
 }> {
   try {
-    const response = await fetch(`${API_URL}/appointments/${appointmentId}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(await getAuthHeaders()),
-      },
-      body: JSON.stringify({ status }),
-    });
+    const response = await fetch(
+      `${API_URL}/appointments/${appointmentId}/status`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
 
     const result = await response.json();
 

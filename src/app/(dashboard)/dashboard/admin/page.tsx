@@ -5,15 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { getCustomers, type CustomerUser } from "@/lib/api/userApi";
-import { getSalonServices, type SalonService } from "@/lib/api/serviceApi";
+import type { SalonService } from "@/lib/api/serviceApi";
+import type { SalonAppointment } from "@/lib/action/appointmentActions";
+import type { SalonTransaction } from "@/lib/api/transactionApi";
 import {
-  getAllAppointments,
-  type SalonAppointment,
-} from "@/lib/action/appointmentActions";
-import {
-  getTransactions,
-  type SalonTransaction,
-} from "@/lib/api/transactionApi";
+  getAdminOverview,
+  type AdminOverviewStats,
+} from "@/lib/api/adminApi";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -34,13 +32,27 @@ interface OverviewData {
   services: SalonService[];
   appointments: SalonAppointment[];
   transactions: SalonTransaction[];
+  stats: AdminOverviewStats;
 }
+
+const EMPTY_STATS: AdminOverviewStats = {
+  totalServices: 0,
+  activeServices: 0,
+  totalAppointments: 0,
+  pendingCount: 0,
+  confirmedCount: 0,
+  completedCount: 0,
+  paidCount: 0,
+  totalRevenue: 0,
+  currency: "usd",
+};
 
 const EMPTY_OVERVIEW: OverviewData = {
   customers: [],
   services: [],
   appointments: [],
   transactions: [],
+  stats: EMPTY_STATS,
 };
 
 const QUICK_ACTIONS = [
@@ -119,27 +131,20 @@ function getPaymentBadgeClass(payment: string): string {
   return "border-stone-700 bg-stone-900 text-stone-300";
 }
 
-// Load the four admin overview sources at the same time.
+// Customers are platform-wide; every other number comes from the admin's
+// own scoped overview endpoint.
 async function loadAdminOverview() {
-  const [customerResult, serviceList, appointmentResult, transactionResult] =
-    await Promise.all([
-      getCustomers(),
-      getSalonServices(),
-      getAllAppointments(),
-      getTransactions(),
-    ]);
+  const [customerResult, overviewResult] = await Promise.all([
+    getCustomers(),
+    getAdminOverview(),
+  ]);
 
-  if (
-    !customerResult.success ||
-    !appointmentResult.success ||
-    !transactionResult.success
-  ) {
+  if (!customerResult.success || !overviewResult.success) {
     return {
       success: false as const,
       message:
         customerResult.message ||
-        appointmentResult.message ||
-        transactionResult.message ||
+        overviewResult.message ||
         "Failed to load the dashboard overview.",
       data: EMPTY_OVERVIEW,
     };
@@ -149,9 +154,10 @@ async function loadAdminOverview() {
     success: true as const,
     data: {
       customers: customerResult.data,
-      services: serviceList,
-      appointments: appointmentResult.data,
-      transactions: transactionResult.data,
+      services: overviewResult.data.services,
+      appointments: overviewResult.data.appointments,
+      transactions: overviewResult.data.transactions,
+      stats: overviewResult.data.stats,
     },
   };
 }
@@ -250,40 +256,17 @@ export default function AdminOverviewPage() {
   }, [isSessionLoading, isAdmin]);
 
   const stats = useMemo(() => {
-    const { customers, services, appointments, transactions } = overview;
-
-    const pendingCount = appointments.filter(
-      (item) => String(item.status || "pending").toLowerCase() === "pending"
-    ).length;
-
-    const confirmedCount = appointments.filter(
-      (item) => String(item.status || "").toLowerCase() === "confirmed"
-    ).length;
-
-    // GET /services already returns active services only. Keep this guard so
-    // the count stays correct if that endpoint ever returns every service.
-    const activeServices = services.filter(
-      (service) => service.isActive !== false && service.status !== "inactive"
-    ).length;
-
-    const paidTransactions = transactions.filter(
-      (item) => String(item.status || "").toLowerCase() === "paid"
-    );
-
-    const paidAmount = paidTransactions.reduce(
-      (sum, item) => sum + Number(item.amount || 0),
-      0
-    );
+    const serverStats = overview.stats;
 
     return {
-      customerCount: customers.length,
-      activeServices,
-      totalAppointments: appointments.length,
-      pendingCount,
-      confirmedCount,
-      paidCount: paidTransactions.length,
-      paidAmount,
-      currency: paidTransactions[0]?.currency || "usd",
+      customerCount: overview.customers.length,
+      activeServices: serverStats.activeServices,
+      totalAppointments: serverStats.totalAppointments,
+      pendingCount: serverStats.pendingCount,
+      confirmedCount: serverStats.confirmedCount,
+      paidCount: serverStats.paidCount,
+      paidAmount: serverStats.totalRevenue,
+      currency: serverStats.currency,
     };
   }, [overview]);
 
@@ -384,7 +367,7 @@ export default function AdminOverviewPage() {
               <StatCard
                 label="Total Registered Customers"
                 value={stats.customerCount}
-                hint="Customer accounts signed up on the platform"
+                hint="Platform-wide customer accounts"
                 icon={<Users className="h-5 w-5 text-amber-300" />}
                 accent="border-amber-400/30 bg-amber-500/10"
               />
