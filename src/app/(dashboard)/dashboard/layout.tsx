@@ -16,10 +16,19 @@ export default async function DashboardLayout({
   });
 
   if (!session || !session.user) {
-    redirect("/login");
+    redirect("/signin");
   }
 
-  const userRole = ((session.user as { role?: string }).role || "customer") as "admin" | "customer";
+  const sessionUser = session.user as {
+    role?: string;
+    isBlocked?: boolean;
+  };
+
+  if (sessionUser.isBlocked) {
+    redirect("/signin?blocked=1");
+  }
+
+  const userRole = (sessionUser.role || "customer") as "admin" | "customer";
 
   return (
     <div className="flex min-h-screen bg-stone-950 text-stone-100">

@@ -8,10 +8,16 @@ export default async function DashboardRootPage() {
   });
 
   if (!session || !session.user) {
-    redirect("/login");
+    redirect("/signin");
   }
 
-  const role = (session.user as { role?: string }).role || "customer";
+  const user = session.user as { role?: string; isBlocked?: boolean };
+
+  if (user.isBlocked) {
+    redirect("/signin?blocked=1");
+  }
+
+  const role = user.role || "customer";
 
   if (role === "admin") {
     redirect("/dashboard/admin");
