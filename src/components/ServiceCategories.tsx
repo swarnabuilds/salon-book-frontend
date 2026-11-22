@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
+import { normalizeServiceCategory } from "@/lib/serviceCategories";
 import {
   Scissors,
   Palette,
@@ -108,16 +109,7 @@ const getServiceImage = (item: Record<string, unknown>): string => {
   return typeof raw === "string" ? raw.trim() : "";
 };
 
-const normalizeCategoryName = (value?: string): string => {
-  const clean = (value || "").trim().toLowerCase();
-  if (clean === "skin & facial" || clean === "facial & skincare") {
-    return "facial & skincare";
-  }
-  if (clean === "hair care") return "hair treatment";
-  if (clean === "bridal & makeup") return "makeup";
-  if (clean === "nail & grooming") return "manicure & pedicure";
-  return clean;
-};
+const normalizeCategoryName = normalizeServiceCategory;
 
 export function ServiceCategories({ services }: ServiceCategoriesProps) {
   const [fetchedList, setFetchedList] = useState<Record<string, unknown>[]>([]);

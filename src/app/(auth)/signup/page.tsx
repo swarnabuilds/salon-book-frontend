@@ -150,7 +150,7 @@ export default function SignUpPage() {
               <span className="text-xl font-serif font-semibold">SalonBook</span>
             </Link>
             <Link
-              href="/browse-services"
+              href="/services"
               className="text-xs font-medium text-stone-600 hover:text-stone-900"
             >
               Explore Services →

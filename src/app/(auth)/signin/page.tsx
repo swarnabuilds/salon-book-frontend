@@ -37,6 +37,7 @@ import {
   resolveSessionUser,
 } from "@/lib/validation/authValidation";
 import { authClient } from "@/lib/auth-client";
+import { clearAuthTokenCache } from "@/lib/api/authHeaders";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
 
 export default function SignInPage() {
@@ -81,6 +82,7 @@ export default function SignInPage() {
 
       if (user?.isBlocked) {
         await authClient.signOut();
+        clearAuthTokenCache();
         toast.error(
           "Your account has been suspended. Please contact SalonBook support."
         );
@@ -136,7 +138,7 @@ export default function SignInPage() {
               <span className="text-xl font-serif font-semibold">SalonBook</span>
             </Link>
             <Link
-              href="/browse-services"
+              href="/services"
               className="text-xs font-medium text-stone-600 hover:text-stone-900"
             >
               Explore Services →

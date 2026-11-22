@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { clearAuthTokenCache } from "@/lib/api/authHeaders";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -15,15 +16,17 @@ import {
   LogOut,
 } from "lucide-react";
 
-export function DashboardSidebar() {
+type DashboardRole = "admin" | "customer";
+
+export function DashboardSidebar({ role: roleProp }: { role?: DashboardRole }) {
   const pathname = usePathname();
   const router = useRouter();
 
   const { data: session, isPending } = authClient.useSession();
 
-  const role = ((session?.user as { role?: string })?.role || "customer") as
-    | "admin"
-    | "customer";
+  const role =
+    roleProp ??
+    (((session?.user as { role?: string })?.role || "customer") as DashboardRole);
 
   const adminLinks = [
     {
@@ -82,7 +85,8 @@ export function DashboardSidebar() {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/sign-in");
+          clearAuthTokenCache();
+          router.push("/signin");
           router.refresh();
         },
       },

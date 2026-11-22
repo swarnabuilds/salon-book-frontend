@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "@/lib/api/authHeaders";
+
 // Define the interface for service payload based on your requirements
 export interface CreateServicePayload {
   serviceName: string;
@@ -21,6 +23,7 @@ export async function createSalonService(serviceData: CreateServicePayload) {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify(serviceData),
     });
@@ -51,6 +54,7 @@ export async function deleteSalonService(serviceId: string) {
     const response = await fetch(`${API_URL}/services/${serviceId}`, {
       method: "DELETE",
       credentials: "include",
+      headers: await getAuthHeaders(),
     });
 
     const result = await response.json();
@@ -95,6 +99,7 @@ export async function updateSalonService(
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify(serviceData),
     });
@@ -128,6 +133,7 @@ export async function setServiceActive(serviceId: string, isActive: boolean) {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify({ isActive }),
     });

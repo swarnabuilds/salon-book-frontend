@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import {
   AlertCircle,
   ArrowLeft,
@@ -30,22 +31,25 @@ async function checkIsAppointmentPaid(appointmentId?: string): Promise<boolean> 
   if (!appointmentId) return false;
 
   try {
-    const res = await fetch(`${API_URL}/appointments`, {
-      cache: "no-store",
-    });
+    // The appointment API is session-scoped, so forward the browser cookie.
+    const cookie = (await headers()).get("cookie") || "";
+
+    const res = await fetch(
+      `${API_URL}/appointments/${encodeURIComponent(appointmentId)}`,
+      {
+        headers: { cookie },
+        cache: "no-store",
+      }
+    );
 
     if (!res.ok) return false;
 
     const json = (await res.json()) as {
       success?: boolean;
-      data?: AppointmentRecord[];
+      data?: AppointmentRecord;
     };
 
-    const target = Array.isArray(json.data)
-      ? json.data.find((item) => String(item._id) === String(appointmentId))
-      : undefined;
-
-    return String(target?.paymentStatus || "").toLowerCase() === "paid";
+    return String(json.data?.paymentStatus || "").toLowerCase() === "paid";
   } catch {
     return false;
   }

@@ -44,6 +44,7 @@ export default async function PaymentSuccessPage({
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
+              "x-internal-secret": process.env.BETTER_AUTH_SECRET || "",
             },
             body: JSON.stringify({
               paymentStatus: "paid",

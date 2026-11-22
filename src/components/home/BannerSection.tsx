@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Sparkles, ArrowRight, Star, ShieldCheck } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 
 export function BannerSection() {
   return (
@@ -48,7 +47,7 @@ export function BannerSection() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
               <Link
-                href="/browse-services"
+                href="/services"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-amber-500 hover:bg-amber-400 px-8 text-sm font-semibold text-stone-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-105 group"
               >
                 <span>Explore Salon Services</span>
@@ -56,7 +55,7 @@ export function BannerSection() {
               </Link>
               
               <Link
-                href="/sign-in"
+                href="/signin"
                 className="inline-flex h-12 items-center justify-center rounded-full border border-stone-700 bg-stone-900/60 hover:bg-stone-800 px-8 text-sm font-medium text-white backdrop-blur-md transition-colors"
               >
                 Book Appointment

@@ -79,7 +79,7 @@ export function ProfileDropdown({
 
         {/* My Profile Link */}
         <DropdownMenuItem
-          onClick={() => router.push("/profile")}
+          onClick={() => router.push(`${getDashboardRouteByRole(role)}/profile`)}
           className="rounded-xl cursor-pointer py-2.5 flex items-center gap-2 text-stone-700 focus:bg-amber-50 focus:text-amber-900 font-medium text-xs"
         >
           <User className="h-4 w-4 text-amber-700" />

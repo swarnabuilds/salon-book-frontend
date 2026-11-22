@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";  
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
-import { Bell, Sparkles } from "lucide-react";
+import { DashboardMobileNav } from "@/components/dashboard/DashboardMobileNav";
+import { Sparkles } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -32,13 +33,16 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-stone-950 text-stone-100">
-      {/* Sidebar */}
-      <DashboardSidebar />
+      {/* Desktop sidebar */}
+      <DashboardSidebar role={userRole} />
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
+        {/* Mobile role-based navigation */}
+        <DashboardMobileNav role={userRole} />
+
         {/* Top Header */}
-        <header className="h-20 border-b border-stone-800/80 bg-stone-950/60 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 sm:h-20 border-b border-stone-800/80 bg-stone-950/60 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
           <div>
             <h1 className="font-serif text-lg font-semibold text-white">
               {userRole === "admin" ? "Admin Control Panel" : "Customer Dashboard"}
@@ -59,16 +63,6 @@ export default async function DashboardLayout({
               <span>{userRole === "admin" ? "Add Service" : "Book Service"}</span>
             </Link>
 
-            {/* Notification Button */}
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-stone-900/70 border border-stone-800/80 text-stone-300 hover:text-amber-400 hover:border-amber-500/30 transition-all duration-300 cursor-pointer"
-            >
-              <Bell className="h-5 w-5" />
-              {/* Unread Notification Dot */}
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-stone-950" />
-            </button>
           </div>
         </header>
 

@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "@/lib/api/authHeaders";
+
 export interface CustomerUser {
   _id: string;
   name: string;
@@ -49,6 +51,7 @@ export async function getCustomers(): Promise<CustomerListResult> {
       method: "GET",
       credentials: "include",
       cache: "no-store",
+      headers: await getAuthHeaders(),
     });
 
     const result = await response.json().catch(() => null);
@@ -89,6 +92,7 @@ export async function setCustomerBlocked(
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify({ isBlocked }),
     });

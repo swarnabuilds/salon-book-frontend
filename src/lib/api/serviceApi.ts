@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "@/lib/api/authHeaders";
+
 export interface SalonService {
   _id: string;
   serviceName: string;  
@@ -87,6 +89,7 @@ export async function getAdminServices(): Promise<ServiceListResult> {
     const response = await fetch(`${API_URL}/services?includeInactive=true`, {
       cache: "no-store",
       credentials: "include",
+      headers: await getAuthHeaders(),
     });
 
     const result = await response.json().catch(() => null);

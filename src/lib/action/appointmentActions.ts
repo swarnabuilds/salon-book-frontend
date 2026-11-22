@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "@/lib/api/authHeaders";
+
 export interface CreateAppointmentPayload {
   serviceId: string;
   appointmentDate: string;
@@ -36,8 +38,10 @@ export async function createAppointment(payload: CreateAppointmentPayload) {
   try {
     const response = await fetch(`${API_URL}/appointments`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify(payload),
     });
@@ -80,7 +84,9 @@ export async function getMyAppointments(customerEmail: string): Promise<{
       `${API_URL}/appointments?email=${encodeURIComponent(cleanEmail)}`,
       {
         method: "GET",
+        credentials: "include",
         cache: "no-store",
+        headers: await getAuthHeaders(),
       }
     );
 
@@ -127,8 +133,10 @@ export async function cancelAppointment(appointmentId: string): Promise<{
   try {
     const response = await fetch(`${API_URL}/appointments/${appointmentId}`, {
       method: "PATCH",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify({ status: "cancelled" }),
     });
@@ -163,7 +171,9 @@ export async function getAllAppointments(): Promise<{
   try {
     const response = await fetch(`${API_URL}/appointments`, {
       method: "GET",
+      credentials: "include",
       cache: "no-store",
+      headers: await getAuthHeaders(),
     });
 
     const result = await response.json();
@@ -193,10 +203,10 @@ export async function getAllAppointments(): Promise<{
   }
 }
 
-// Admin: Update appointment status (confirmed, completed, cancelled, pending)
+// Admin: Update appointment status (confirmed or cancelled only)
 export async function updateAppointmentStatus(
   appointmentId: string,
-  status: "pending" | "confirmed" | "completed" | "cancelled"
+  status: "confirmed" | "cancelled"
 ): Promise<{
   success: boolean;
   message: string;
@@ -207,6 +217,7 @@ export async function updateAppointmentStatus(
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        ...(await getAuthHeaders()),
       },
       body: JSON.stringify({ status }),
     });

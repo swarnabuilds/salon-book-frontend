@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "@/lib/api/authHeaders";
+
 export interface SalonTransaction {
   _id: string;
   appointmentId?: string;
@@ -31,6 +33,7 @@ export async function getTransactions(): Promise<TransactionListResult> {
       method: "GET",
       credentials: "include",
       cache: "no-store",
+      headers: await getAuthHeaders(),
     });
 
     const result = await response.json().catch(() => null);

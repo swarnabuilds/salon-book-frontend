@@ -22,6 +22,7 @@ import {
   resolveSessionUser,
 } from "@/lib/validation/authValidation";
 import { authClient } from "@/lib/auth-client";
+import { clearAuthTokenCache } from "@/lib/api/authHeaders";
 import type { NavLinkItem } from "@/types/navigation";
 
 export function Navbar() {
@@ -51,7 +52,6 @@ export function Navbar() {
     if (isAuthenticated) {
       return [
         ...baseLinks,
-        { label: "Salon Details", href: "/salon-details", requiresAuth: true },
         { label: "Dashboard", href: dashboardHref, requiresAuth: true },
       ];
     }
@@ -64,9 +64,10 @@ export function Navbar() {
     setIsLoggingOut(true);
     try {
       await authClient.signOut();
+      clearAuthTokenCache();
       setMobileMenuOpen(false);
       toast.success("Logged out successfully.");
-      router.push("/sign-in");
+      router.push("/signin");
       router.refresh();
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Failed to log out."));

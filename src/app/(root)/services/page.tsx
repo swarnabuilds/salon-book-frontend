@@ -6,6 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
 import { formatServiceDuration } from "@/lib/formatServiceDuration";
 import {
+  normalizeServiceCategory,
+  SALON_CATEGORIES,
+} from "@/lib/serviceCategories";
+import {
   Search,
   Scissors,
   Clock,
@@ -17,25 +21,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-// Exact categories listed in the SalonBook requirement document
-const REQUIRED_CATEGORIES = [
-  "Haircut & Styling",
-  "Hair Coloring",
-  "Hair Treatment",
-  "Facial & Skincare",
-  "Makeup",
-  "Manicure & Pedicure",
-  "Spa & Massage",
-] as const;
-
-// Normalize category names so legacy labels like "Skin & Facial" still match
-const normalizeCategory = (category?: string): string => {
-  const value = (category || "").trim().toLowerCase();
-  if (value === "skin & facial" || value === "facial & skincare") {
-    return "facial & skincare";
-  }
-  return value;
-};
+const REQUIRED_CATEGORIES = SALON_CATEGORIES;
+const normalizeCategory = normalizeServiceCategory;
 
 function BrowseServicesContent() {
   const router = useRouter();
