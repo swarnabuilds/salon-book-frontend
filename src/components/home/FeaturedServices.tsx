@@ -164,7 +164,7 @@ export function FeaturedServices() {
 
                   {/* Fancy "View Details" Button */}
                   <Link
-                    href={`/dashboard/admin/manage-services/${service._id}`}
+                    href={`/services/${service._id}`}
                     className="inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap rounded-2xl border border-amber-400/50 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 px-4 py-2.5 text-xs font-bold tracking-wide text-white shadow-md shadow-amber-600/25 hover:from-amber-400 hover:via-amber-500 hover:to-amber-600 hover:shadow-lg hover:shadow-amber-600/35 active:scale-[0.98] transition-all duration-200 group/btn"
                   >
                     <span>View Details</span>

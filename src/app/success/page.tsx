@@ -27,11 +27,18 @@ export default async function PaymentSuccessPage({
     try {
       const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
       const appointmentId = checkoutSession.metadata?.appointmentId;
+      const paidAmount =
+        typeof checkoutSession.amount_total === "number"
+          ? checkoutSession.amount_total / 100
+          : undefined;
+      const paidCurrency = checkoutSession.currency
+        ? checkoutSession.currency.toUpperCase()
+        : "USD";
 
       if (checkoutSession.payment_status === "paid") {
         isPaid = true;
 
-        // Update appointment paymentStatus in MongoDB via Express backend
+        // Update appointment paymentStatus and record transaction in MongoDB via Express backend
         if (appointmentId) {
           const patchRes = await fetch(`${API_URL}/appointments/${appointmentId}`, {
             method: "PATCH",
@@ -41,15 +48,21 @@ export default async function PaymentSuccessPage({
             body: JSON.stringify({
               paymentStatus: "paid",
               stripeSessionId: sessionId,
+              ...(paidAmount !== undefined ? { amount: paidAmount } : {}),
+              currency: paidCurrency,
             }),
             cache: "no-store",
           });
 
           if (!patchRes.ok) {
-            console.error(
-              "Failed to mark appointment as paid:",
-              await patchRes.text()
-            );
+            const errorText = await patchRes.text();
+            // Ignore duplicate payment guard message if already marked paid
+            if (!errorText.toLowerCase().includes("already paid")) {
+              console.error(
+                "Failed to mark appointment as paid:",
+                errorText
+              );
+            }
           }
         }
       }
