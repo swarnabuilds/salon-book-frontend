@@ -19,6 +19,38 @@ interface CheckoutPageProps {
   }>;
 }
 
+interface AppointmentRecord {
+  _id: string;
+  paymentStatus?: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+async function checkIsAppointmentPaid(appointmentId?: string): Promise<boolean> {
+  if (!appointmentId) return false;
+
+  try {
+    const res = await fetch(`${API_URL}/appointments`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) return false;
+
+    const json = (await res.json()) as {
+      success?: boolean;
+      data?: AppointmentRecord[];
+    };
+
+    const target = Array.isArray(json.data)
+      ? json.data.find((item) => String(item._id) === String(appointmentId))
+      : undefined;
+
+    return String(target?.paymentStatus || "").toLowerCase() === "paid";
+  } catch {
+    return false;
+  }
+}
+
 export default async function CheckoutContent({
   searchParams,
 }: CheckoutPageProps) {
@@ -32,9 +64,11 @@ export default async function CheckoutContent({
   } = await searchParams;
 
   const parsedAmount = Number(rawAmount || 20);
-
   const amount =
     Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 20;
+
+  // Check if this booking has already been paid
+  const isAlreadyPaid = await checkIsAppointmentPaid(appointmentId);
 
   if (canceled) {
     console.log(
@@ -89,8 +123,14 @@ export default async function CheckoutContent({
                 Appointment Summary
               </h2>
 
-              <span className="rounded-full border border-amber-400/35 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300">
-                Pending Payment
+              <span
+                className={`rounded-full border px-3.5 py-1 text-xs font-bold ${
+                  isAlreadyPaid
+                    ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-300"
+                    : "border-amber-400/35 bg-amber-500/10 text-amber-300"
+                }`}
+              >
+                {isAlreadyPaid ? "Paid" : "Pending Payment"}
               </span>
             </div>
           </div>
@@ -171,6 +211,7 @@ export default async function CheckoutContent({
               appointmentId={appointmentId || ""}
               serviceName={serviceName || "Salon Service"}
               amount={amount}
+              isAlreadyPaid={isAlreadyPaid}
             />
 
             {/* Security Note */}

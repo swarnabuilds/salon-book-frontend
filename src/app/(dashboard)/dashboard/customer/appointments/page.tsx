@@ -342,6 +342,9 @@ export default function MyAppointmentsPage() {
                     ).toLowerCase();
 
                     const canCancel = statusText === "pending";
+                    // Show Pay Now only when payment is not yet paid and booking isn't cancelled
+                    const canPay =
+                      paymentText !== "paid" && statusText !== "cancelled";
                     const isMenuOpen = openMenuId === item._id;
 
                     return (
@@ -468,17 +471,19 @@ export default function MyAppointmentsPage() {
                                   <span>View Details</span>
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenMenuId(null);
-                                    handlePayNow(item);
-                                  }}
-                                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3.5 py-2.5 text-sm font-semibold text-stone-200 transition hover:bg-[#241F18] hover:text-emerald-300 sm:text-base"
-                                >
-                                  <CreditCard className="h-4 w-4 text-emerald-400" />
-                                  <span>Pay Now</span>
-                                </button>
+                                {canPay && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      handlePayNow(item);
+                                    }}
+                                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-3.5 py-2.5 text-sm font-semibold text-stone-200 transition hover:bg-[#241F18] hover:text-emerald-300 sm:text-base"
+                                  >
+                                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                                    <span>Pay Now</span>
+                                  </button>
+                                )}
 
                                 {canCancel && (
                                   <button

@@ -1,20 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Loader2 } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 
 interface CheckoutPaymentButtonProps {
   appointmentId: string;
   serviceName: string;
   amount: number;
+  isAlreadyPaid?: boolean;
 }
 
 export default function CheckoutPaymentButton({
   appointmentId,
   serviceName,
   amount,
+  isAlreadyPaid = false,
 }: CheckoutPaymentButtonProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Prevent duplicate payment once the appointment is already paid
+  if (isAlreadyPaid) {
+    return (
+      <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-6 py-4 text-base font-bold text-emerald-300">
+        <CheckCircle2 size={18} />
+        Already Paid
+      </div>
+    );
+  }
 
   return (
     <form
