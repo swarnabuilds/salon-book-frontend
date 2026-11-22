@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { createAppointment } from "@/lib/action/appointmentActions";
+import { formatServiceDuration } from "@/lib/formatServiceDuration";
 import {
   Calendar,
   Clock,
@@ -16,7 +17,7 @@ interface BookAppointmentFormProps {
   serviceId: string;
   serviceName: string;
   price: number;
-  duration: string;
+  duration: string | number;
   customerId?: string;
   customerName?: string;
   customerEmail?: string;
@@ -289,7 +290,7 @@ export function BookAppointmentForm({
               <span>
                 Duration:{" "}
                 <strong className="text-stone-100 font-semibold">
-                  {duration}
+                  {formatServiceDuration(duration)}
                 </strong>
               </span>
             </div>

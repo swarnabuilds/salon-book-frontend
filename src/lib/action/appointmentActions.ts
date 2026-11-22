@@ -18,6 +18,7 @@ export interface SalonAppointment {
   serviceName: string;
   serviceImage?: string;
   serviceCategory?: string;
+  customerImage?: string;
   appointmentDate: string;
   timeSlot: string;
   message?: string;
@@ -203,6 +204,7 @@ export async function updateAppointmentStatus(
   try {
     const response = await fetch(`${API_URL}/appointments/${appointmentId}`, {
       method: "PATCH",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },

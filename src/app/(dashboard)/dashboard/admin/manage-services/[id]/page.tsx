@@ -5,6 +5,7 @@ export default function AdminServiceDetailsPage() {
     <ServiceDetailsView
       backHref="/dashboard/admin/manage-services"
       backLabel="Manage Services"
+      theme="dark"
     />
   );
 }

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
+import { formatServiceDuration } from "@/lib/formatServiceDuration";
 import {
   Scissors,
   Clock,
@@ -158,7 +159,7 @@ export function FeaturedServices() {
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 mt-1.5">
                       <Clock className="h-3 w-3 text-amber-700 shrink-0" />
-                      <span>{service.duration}</span>
+                      <span>{formatServiceDuration(service.duration)}</span>
                     </span>
                   </div>
 

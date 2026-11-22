@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSalonServices, SalonService } from "@/lib/api/serviceApi";
+import { formatServiceDuration } from "@/lib/formatServiceDuration";
 import {
   Search,
   Scissors,
@@ -339,7 +340,7 @@ function BrowseServicesContent() {
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-600 mt-1.5">
                       <Clock className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                      <span>{service.duration}</span>
+                      <span>{formatServiceDuration(service.duration)}</span>
                     </span>
                   </div>
 

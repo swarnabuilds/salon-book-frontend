@@ -3,17 +3,16 @@
 import React, { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { createSalonService, CreateServicePayload } from "@/lib/action/serviceActions";
-import { Scissors, AlertCircle, Loader2, ArrowUpRight } from "lucide-react";
-
-const SALON_CATEGORIES = [
-  "Haircut & Styling",
-  "Hair Coloring",
-  "Hair Treatment",
-  "Facial & Skincare",
-  "Makeup",
-  "Manicure & Pedicure",
-  "Spa & Massage",
-] as const;
+import { SALON_CATEGORIES } from "@/lib/serviceCategories";
+import { uploadImageToImgbb } from "@/lib/uploadImage";
+import {
+  Scissors,
+  AlertCircle,
+  Loader2,
+  ArrowUpRight,
+  Image as ImageIcon,
+  Upload,
+} from "lucide-react";
 
 interface CreateServiceFormProps {
   onSuccess?: (message: string) => void;
@@ -23,6 +22,30 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
   const { data: session } = authClient.useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setErrorMessage(null);
+
+    const result = await uploadImageToImgbb(file);
+
+    setIsUploadingImage(false);
+    event.target.value = "";
+
+    if (!result.success || !result.url) {
+      setErrorMessage(result.message || "Failed to upload image.");
+      return;
+    }
+
+    setImageUrl(result.url);
+  };
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,6 +57,11 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
       return;
     }
 
+    if (!imageUrl) {
+      setErrorMessage("Please upload a service image before publishing.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Extract form values using standard FormData API
@@ -42,7 +70,7 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
     const payload: CreateServicePayload = {
       serviceName: String(formData.get("serviceName") || "").trim(),
-      image: String(formData.get("image") || "").trim(),
+      image: imageUrl,
       category: String(formData.get("category") || "").trim(),
       price: Number(formData.get("price") || 0),
       duration: String(formData.get("duration") || "").trim(),
@@ -58,6 +86,7 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
 
     if (res.success) {
       form.reset();
+      setImageUrl("");
       if (onSuccess) {
         onSuccess("New service created successfully!");
       }
@@ -147,7 +176,7 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
               name="price"
               type="number"
               required
-              min="0"
+              min="1"
               step="any"
               placeholder="e.g., 2500"
               className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-3 text-sm text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
@@ -160,35 +189,67 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
               htmlFor="duration"
               className="block text-sm font-medium text-stone-300 mb-1.5"
             >
-              Duration <span className="text-amber-400">*</span>
+              Duration (minutes) <span className="text-amber-400">*</span>
             </label>
             <input
               id="duration"
               name="duration"
-              type="text"
+              type="number"
               required
-              placeholder="e.g., 90 mins"
+              min="1"
+              step="1"
+              placeholder="e.g., 90"
               className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-3 text-sm text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
             />
           </div>
         </div>
 
-        {/* Service image URL input */}
+        {/* Service image upload */}
         <div>
-          <label
-            htmlFor="image"
-            className="block text-sm font-medium text-stone-300 mb-1.5"
-          >
-            Service Image URL <span className="text-amber-400">*</span>
+          <label className="block text-sm font-medium text-stone-300 mb-1.5">
+            Service Image <span className="text-amber-400">*</span>
           </label>
-          <input
-            id="image"
-            name="image"
-            type="url"
-            required
-            placeholder="https://example.com/salon-service.jpg"
-            className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-3 text-sm text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
-          />
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-stone-800 bg-stone-900/50 p-3 sm:flex-row sm:items-center">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-800 bg-stone-900 text-amber-400">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt="Selected service"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ImageIcon className="h-6 w-6" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/20">
+                {isUploadingImage ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                <span>
+                  {isUploadingImage
+                    ? "Uploading..."
+                    : imageUrl
+                      ? "Replace Image"
+                      : "Upload Image"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingImage || isSubmitting}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              <p className="mt-1.5 text-xs text-stone-500">
+                Upload a JPG or PNG file. The image is hosted on ImgBB.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Short description input */}
@@ -250,7 +311,7 @@ export function CreateServiceForm({ onSuccess }: CreateServiceFormProps) {
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingImage}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-3 text-sm font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 transition-all duration-300 cursor-pointer"
           >
             {isSubmitting ? (

@@ -11,13 +11,14 @@ export interface CreateServicePayload {
   createdBy: string;
 }
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // Send service payload to backend API
 export async function createSalonService(serviceData: CreateServicePayload) {
   try {
     const response = await fetch(`${API_URL}/services`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -49,6 +50,7 @@ export async function deleteSalonService(serviceId: string) {
   try {
     const response = await fetch(`${API_URL}/services/${serviceId}`, {
       method: "DELETE",
+      credentials: "include",
     });
 
     const result = await response.json();
@@ -90,6 +92,7 @@ export async function updateSalonService(
   try {
     const response = await fetch(`${API_URL}/services/${serviceId}`, {
       method: "PATCH",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -113,6 +116,43 @@ export async function updateSalonService(
     return {
       success: false,
       message: errorMessage,
+    };
+  }
+}
+
+// Activate or deactivate a service directly from the Manage Services list.
+export async function setServiceActive(serviceId: string, isActive: boolean) {
+  try {
+    const response = await fetch(`${API_URL}/services/${serviceId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ isActive }),
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result?.message || "Failed to update service status.",
+      };
+    }
+
+    return {
+      success: true,
+      data: result?.data as { isActive?: boolean } | undefined,
+      message: result?.message || "Service status updated.",
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update service status.",
     };
   }
 }

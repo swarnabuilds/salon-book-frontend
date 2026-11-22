@@ -4,7 +4,7 @@ export interface SalonService {
   image: string;
   category: string;
   price: number;
-  duration: string;
+  duration: string | number;
   shortDescription?: string;
   description: string;
   isActive?: boolean;
@@ -71,5 +71,50 @@ export async function getServiceById(serviceId: string): Promise<SalonService | 
   } catch (error: unknown) {
     console.error("Error fetching service details:", error);
     return null;
+  }
+}
+
+export interface ServiceListResult {
+  success: boolean;
+  data: SalonService[];
+  message?: string;
+}
+
+// Admin: load every service, including inactive ones, so they can be
+// reactivated from the Manage Services page.
+export async function getAdminServices(): Promise<ServiceListResult> {
+  try {
+    const response = await fetch(`${API_URL}/services?includeInactive=true`, {
+      cache: "no-store",
+      credentials: "include",
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        data: [],
+        message: result?.message || "Failed to load services.",
+      };
+    }
+
+    const list = Array.isArray(result)
+      ? result
+      : Array.isArray(result?.data)
+        ? result.data
+        : [];
+
+    return {
+      success: true,
+      data: list as SalonService[],
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      data: [],
+      message:
+        error instanceof Error ? error.message : "Unable to load services.",
+    };
   }
 }

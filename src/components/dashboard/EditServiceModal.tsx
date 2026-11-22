@@ -6,7 +6,17 @@ import {
   updateSalonService,
   UpdateServicePayload,
 } from "@/lib/action/serviceActions";
-import { Pencil, X, AlertCircle, Loader2, Check } from "lucide-react";
+import { SALON_CATEGORIES } from "@/lib/serviceCategories";
+import { uploadImageToImgbb } from "@/lib/uploadImage";
+import {
+  Pencil,
+  X,
+  AlertCircle,
+  Loader2,
+  Check,
+  Image as ImageIcon,
+  Upload,
+} from "lucide-react";
 
 interface EditServiceModalProps {
   service: SalonService | null;
@@ -21,22 +31,58 @@ export function EditServiceModal({
 }: EditServiceModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState(service?.image || "");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   if (!service) return null;
 
   const isCurrentlyActive =
     service.isActive !== false && service.status !== "inactive";
 
+  // Keep any legacy category value selectable while offering the
+  // requirement's official category list.
+  const categoryOptions = Array.from(
+    new Set([service.category, ...SALON_CATEGORIES])
+  );
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setErrorMessage(null);
+
+    const result = await uploadImageToImgbb(file);
+
+    setIsUploadingImage(false);
+    event.target.value = "";
+
+    if (!result.success || !result.url) {
+      setErrorMessage(result.message || "Failed to upload image.");
+      return;
+    }
+
+    setImageUrl(result.url);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (!imageUrl) {
+      setErrorMessage("Please upload a service image before saving.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
 
     const payload: UpdateServicePayload = {
       serviceName: String(formData.get("serviceName") || "").trim(),
-      image: String(formData.get("image") || "").trim(),
+      image: imageUrl,
       category: String(formData.get("category") || "").trim(),
       price: Number(formData.get("price") || 0),
       duration: String(formData.get("duration") || "").trim(),
@@ -136,11 +182,11 @@ export function EditServiceModal({
                 defaultValue={service.category}
                 className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-2.5 text-xs text-white focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
               >
-                <option value="Hair Care">Hair Care</option>
-                <option value="Skin & Facial">Skin & Facial</option>
-                <option value="Bridal & Makeup">Bridal & Makeup</option>
-                <option value="Spa & Massage">Spa & Massage</option>
-                <option value="Nail & Grooming">Nail & Grooming</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -157,7 +203,7 @@ export function EditServiceModal({
                 name="price"
                 type="number"
                 required
-                min="0"
+                min="1"
                 step="any"
                 defaultValue={service.price}
                 className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-2.5 text-xs text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
@@ -170,35 +216,67 @@ export function EditServiceModal({
                 htmlFor="edit-duration"
                 className="block text-xs font-medium text-stone-300 mb-1.5"
               >
-                Duration <span className="text-amber-400">*</span>
+                Duration (minutes) <span className="text-amber-400">*</span>
               </label>
               <input
                 id="edit-duration"
                 name="duration"
-                type="text"
+                type="number"
                 required
+                min="1"
+                step="1"
                 defaultValue={service.duration}
                 className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-2.5 text-xs text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
               />
             </div>
           </div>
 
-          {/* Image URL */}
+          {/* Service image upload */}
           <div>
-            <label
-              htmlFor="edit-image"
-              className="block text-xs font-medium text-stone-300 mb-1.5"
-            >
-              Service Image URL <span className="text-amber-400">*</span>
+            <label className="block text-xs font-medium text-stone-300 mb-1.5">
+              Service Image <span className="text-amber-400">*</span>
             </label>
-            <input
-              id="edit-image"
-              name="image"
-              type="url"
-              required
-              defaultValue={service.image}
-              className="w-full rounded-xl border border-stone-800 bg-stone-900/80 px-4 py-2.5 text-xs text-white placeholder-stone-500 focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/15 transition"
-            />
+
+            <div className="flex flex-col gap-3 rounded-2xl border border-stone-800 bg-stone-900/50 p-3 sm:flex-row sm:items-center">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-800 bg-stone-900 text-amber-400">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={service.serviceName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="h-6 w-6" />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/20">
+                  {isUploadingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <span>
+                    {isUploadingImage
+                      ? "Uploading..."
+                      : imageUrl
+                        ? "Replace Image"
+                        : "Upload Image"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploadingImage || isSubmitting}
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+                <p className="mt-1.5 text-[11px] text-stone-500">
+                  Upload a JPG or PNG file. The image is hosted on ImgBB.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Short description */}
@@ -269,7 +347,7 @@ export function EditServiceModal({
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingImage}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-xs font-bold text-stone-950 shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 transition cursor-pointer"
             >
               {isSubmitting ? (
