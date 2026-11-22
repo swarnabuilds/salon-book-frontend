@@ -16,17 +16,8 @@ import {
   Loader2,
   AlertCircle,
   ShieldAlert,
-  UserCheck,
   Sparkles,
 } from "lucide-react";
-
-function formatCreatorName(email?: string): string {
-  if (!email) return "Salon Admin";
-  const localPart = email.split("@")[0] || "Salon Admin";
-  return localPart
-    .replace(/[._-]+/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 interface ServiceDetailsViewProps {
   backHref?: string;
@@ -170,7 +161,6 @@ export default function ServiceDetailsView({
     service.isActive !== false && service.status !== "inactive";
   const isCustomer = userRole === "customer";
   const canBook = isServiceActive && isCustomer;
-  const creatorDisplayName = formatCreatorName(service.createdBy);
 
   return (
     <section
@@ -293,33 +283,6 @@ export default function ServiceDetailsView({
                 >
                   {service.shortDescription}
                 </p>
-              )}
-            </div>
-
-            <div
-              className={`inline-flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-2.5 text-xs sm:text-sm ${
-                isDark
-                  ? "border-stone-800 bg-[#14110D]"
-                  : "border-stone-200 bg-amber-50/40"
-              }`}
-            >
-              <UserCheck
-                className={`h-4 w-4 shrink-0 ${
-                  isDark ? "text-amber-400" : "text-amber-700"
-                }`}
-              />
-              <span className={isDark ? "text-stone-400" : "text-stone-500"}>
-                Created by
-              </span>
-              <span
-                className={`font-bold ${
-                  isDark ? "text-white" : "text-stone-900"
-                }`}
-              >
-                {creatorDisplayName}
-              </span>
-              {service.createdBy && (
-                <span className="text-stone-500">({service.createdBy})</span>
               )}
             </div>
 
