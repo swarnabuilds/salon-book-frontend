@@ -3,9 +3,7 @@ import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields } from "better-auth/client/plugins";
 import type { auth } from "./auth";
 
-// BETTER_AUTH_URL is server-only in Next.js, so it is not available in the
-// browser bundle. Use the public override when present, otherwise call the
-// same origin that served the page. This keeps localhost and deployment in
+ 
 // sync without a hard-coded URL.
 function getAuthBaseURL(): string {
   const publicUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL;

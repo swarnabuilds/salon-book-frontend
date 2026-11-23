@@ -78,8 +78,8 @@ Add the deployed URL here before submission: `https://<your-deployed-salonbook-d
 
 ## Repository Links
 
-- Client: https://github.com/swarnabuilds/salon-book-frontend.git
-- Server: https://github.com/swarnabuilds/salon-book-backend.git
+- Client: https://github.com/swarnabuilds/salon-book-frontend
+- Server: https://github.com/swarnabuilds/salon-book-backend
 
 ## Deployment Guideline
 
