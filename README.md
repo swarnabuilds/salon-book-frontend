@@ -74,7 +74,7 @@ Names only — never commit actual values.
 
 ## Live Website Link
 
-Add the deployed URL here before submission: `https://<your-deployed-salonbook-domain>`
+-Live link: https://salon-book-system.vercel.app
 
 ## Repository Links
 
